@@ -36,8 +36,9 @@ int ocp_fw_activation_history_log(int argc, char **argv, struct command *cmd,
 		OPT_END()
 	};
 
-	struct nvme_dev *dev = NULL;
-	int err = parse_and_open(&dev, argc, argv, description, options);
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	int err = parse_and_open(&r, &l, argc, argv, description, options);
 
 	if (err)
 		return err;
@@ -48,7 +49,7 @@ int ocp_fw_activation_history_log(int argc, char **argv, struct command *cmd,
 	 * Best effort attempt at uuid. Otherwise, assume no index (i.e. 0)
 	 * Log GUID check will ensure correctness of returned data
 	 */
-	ocp_get_uuid_index(dev, &uuid_index);
+	ocp_get_uuid_index(l, &uuid_index);
 
 	struct fw_activation_history fw_history = { 0 };
 
@@ -57,7 +58,6 @@ int ocp_fw_activation_history_log(int argc, char **argv, struct command *cmd,
 		.result = NULL,
 		.log = &fw_history,
 		.args_size = sizeof(args),
-		.fd = dev_fd(dev),
 		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
 		.lid = (enum nvme_cmd_get_log_lid)OCP_LID_FAHL_OBSOLETE,
 		.len = sizeof(fw_history),
@@ -70,12 +70,10 @@ int ocp_fw_activation_history_log(int argc, char **argv, struct command *cmd,
 		.ot = false,
 	};
 
-	err = nvme_get_log(&args);
+	err = nvme_get_log(l, &args);
 
 	if (err)
 		nvme_show_status(err);
-
-	dev_close(dev);
 
 	int guid_cmp_res = memcmp(fw_history.log_page_guid, ocp_fw_activation_history_guid,
 				  sizeof(ocp_fw_activation_history_guid));

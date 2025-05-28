@@ -352,14 +352,14 @@ static void show_memblaze_smart_log_old(struct nvme_memblaze_smart_log *smart,
 	}
 }
 
-static int show_memblaze_smart_log(int fd, __u32 nsid, const char *devname,
+static int show_memblaze_smart_log(nvme_link_t l, __u32 nsid, const char *devname,
 	struct nvme_memblaze_smart_log *smart)
 {
 	struct nvme_id_ctrl ctrl;
 	char fw_ver[10];
 	int err = 0;
 
-	err = nvme_identify_ctrl(fd, &ctrl);
+	err = nvme_identify_ctrl(l, &ctrl);
 	if (err)
 		return err;
 
@@ -420,7 +420,8 @@ static int mb_get_additional_smart_log(int argc, char **argv, struct command *cm
 	    "Get Memblaze vendor specific additional smart log, and show it.";
 	const char *namespace = "(optional) desired namespace";
 	const char *raw = "dump output in binary format";
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	struct config {
 		__u32 namespace_id;
 		bool  raw_binary;
@@ -437,15 +438,16 @@ static int mb_get_additional_smart_log(int argc, char **argv, struct command *cm
 		OPT_END()
 	};
 
-	err = parse_and_open(&dev, argc, argv, desc, opts);
+	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
 		return err;
 
-	err = nvme_get_nsid_log(dev_fd(dev), false, 0xca, cfg.namespace_id,
+	err = nvme_get_nsid_log(l, false, 0xca, cfg.namespace_id,
 				sizeof(smart_log), &smart_log);
 	if (!err) {
 		if (!cfg.raw_binary)
-			err = show_memblaze_smart_log(dev_fd(dev), cfg.namespace_id, dev->name,
+			err = show_memblaze_smart_log(l, cfg.namespace_id,
+						      nvme_link_get_name(l),
 						      &smart_log);
 		else
 			d_raw((unsigned char *)&smart_log, sizeof(smart_log));
@@ -476,20 +478,20 @@ static int mb_get_powermanager_status(int argc, char **argv, struct command *cmd
 	const char *desc = "Get Memblaze power management ststus\n	(value 0 - 25w, 1 - 20w, 2 - 15w)";
 	__u32 result;
 	__u32 feature_id = MB_FEAT_POWER_MGMT;
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	int err;
 
 	OPT_ARGS(opts) = {
 		OPT_END()
 	};
 
-	err = parse_and_open(&dev, argc, argv, desc, opts);
+	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
 		return err;
 
 	struct nvme_get_features_args args = {
 		.args_size	= sizeof(args),
-		.fd		= dev_fd(dev),
 		.fid		= feature_id,
 		.nsid		= 0,
 		.sel		= 0,
@@ -500,7 +502,7 @@ static int mb_get_powermanager_status(int argc, char **argv, struct command *cmd
 		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
 		.result		= &result,
 	};
-	err = nvme_get_features(&args);
+	err = nvme_get_features(l, &args);
 	if (err < 0)
 		perror("get-feature");
 	if (!err)
@@ -517,7 +519,8 @@ static int mb_set_powermanager_status(int argc, char **argv, struct command *cmd
 	const char *desc = "Set Memblaze power management status\n	(value 0 - 25w, 1 - 20w, 2 - 15w)";
 	const char *value = "new value of feature (required)";
 	const char *save = "specifies that the controller shall save the attribute";
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	__u32 result;
 	int err;
 
@@ -539,13 +542,12 @@ static int mb_set_powermanager_status(int argc, char **argv, struct command *cmd
 		OPT_END()
 	};
 
-	err = parse_and_open(&dev, argc, argv, desc, opts);
+	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
 		return err;
 
 	struct nvme_set_features_args args = {
 		.args_size	= sizeof(args),
-		.fd		= dev_fd(dev),
 		.fid		= cfg.feature_id,
 		.nsid		= 0,
 		.cdw11		= cfg.value,
@@ -558,7 +560,7 @@ static int mb_set_powermanager_status(int argc, char **argv, struct command *cmd
 		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
 		.result		= &result,
 	};
-	err = nvme_set_features(&args);
+	err = nvme_set_features(l, &args);
 	if (err < 0)
 		perror("set-feature");
 	if (!err)
@@ -582,7 +584,9 @@ static int mb_set_high_latency_log(int argc, char **argv, struct command *cmd,
 			   "	p2 value: 1 .. 5000 ms";
 	const char *param = "input parameters";
 	int param1 = 0, param2 = 0;
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
+
 	__u32 result;
 	int err;
 
@@ -603,7 +607,7 @@ static int mb_set_high_latency_log(int argc, char **argv, struct command *cmd,
 		OPT_END()
 	};
 
-	err = parse_and_open(&dev, argc, argv, desc, opts);
+	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -619,7 +623,6 @@ static int mb_set_high_latency_log(int argc, char **argv, struct command *cmd,
 
 	struct nvme_set_features_args args = {
 		.args_size	= sizeof(args),
-		.fd		= dev_fd(dev),
 		.fid		= cfg.feature_id,
 		.nsid		= 0,
 		.cdw11		= cfg.value,
@@ -632,7 +635,7 @@ static int mb_set_high_latency_log(int argc, char **argv, struct command *cmd,
 		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
 		.result		= &result,
 	};
-	err = nvme_set_features(&args);
+	err = nvme_set_features(l, &args);
 	if (err < 0)
 		perror("set-feature");
 	if (!err)
@@ -736,7 +739,9 @@ static int mb_high_latency_log_print(int argc, char **argv, struct command *cmd,
 {
 	const char *desc = "Get Memblaze high latency log";
 	char buf[LOG_PAGE_SIZE];
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
+
 	FILE *fdi = NULL;
 	int err;
 
@@ -744,19 +749,19 @@ static int mb_high_latency_log_print(int argc, char **argv, struct command *cmd,
 		OPT_END()
 	};
 
-	err = parse_and_open(&dev, argc, argv, desc, opts);
+	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
 		return err;
 
 	fdi = fopen(FID_C3_LOG_FILENAME, "w+");
 
 	glp_high_latency_show_bar(fdi, DO_PRINT_FLAG);
-	err = nvme_get_log_simple(dev_fd(dev), GLP_ID_VU_GET_HIGH_LATENCY_LOG, sizeof(buf), &buf);
+	err = nvme_get_log_simple(l, GLP_ID_VU_GET_HIGH_LATENCY_LOG, sizeof(buf), &buf);
 
 	while (1) {
 		if (!glp_high_latency(fdi, buf, LOG_PAGE_SIZE, DO_PRINT_FLAG))
 			break;
-		err = nvme_get_log_simple(dev_fd(dev), GLP_ID_VU_GET_HIGH_LATENCY_LOG, sizeof(buf),
+		err = nvme_get_log_simple(l, GLP_ID_VU_GET_HIGH_LATENCY_LOG, sizeof(buf),
 					  &buf);
 		if (err) {
 			nvme_show_status(err);
@@ -769,7 +774,7 @@ static int mb_high_latency_log_print(int argc, char **argv, struct command *cmd,
 	return err;
 }
 
-static int memblaze_fw_commit(int fd, int select)
+static int memblaze_fw_commit(nvme_link_t l, int select)
 {
 	struct nvme_passthru_cmd cmd = {
 		.opcode		= nvme_admin_fw_commit,
@@ -777,7 +782,7 @@ static int memblaze_fw_commit(int fd, int select)
 		.cdw12		= select,
 	};
 
-	return nvme_submit_admin_passthru(fd, &cmd, NULL);
+	return nvme_submit_admin_passthru(l, &cmd, NULL);
 }
 
 static int mb_selective_download(int argc, char **argv, struct command *cmd, struct plugin *plugin)
@@ -794,7 +799,9 @@ static int mb_selective_download(int argc, char **argv, struct command *cmd, str
 	int xfer = 4096;
 	void *fw_buf;
 	int selectNo, fw_fd, fw_size, err, offset = 0;
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
+
 	struct stat sb;
 	int i;
 
@@ -814,7 +821,7 @@ static int mb_selective_download(int argc, char **argv, struct command *cmd, str
 		OPT_END()
 	};
 
-	err = parse_and_open(&dev, argc, argv, desc, opts);
+	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -876,14 +883,13 @@ static int mb_selective_download(int argc, char **argv, struct command *cmd, str
 
 		struct nvme_fw_download_args args = {
 			.args_size	= sizeof(args),
-			.fd		= dev_fd(dev),
 			.offset		= offset,
 			.data_len	= xfer,
 			.data		= fw_buf,
 			.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
 			.result		= NULL,
 		};
-		err = nvme_fw_download(&args);
+		err = nvme_fw_download(l, &args);
 		if (err < 0) {
 			perror("fw-download");
 			goto out_free;
@@ -896,7 +902,7 @@ static int mb_selective_download(int argc, char **argv, struct command *cmd, str
 		offset += xfer;
 	}
 
-	err = memblaze_fw_commit(dev_fd(dev), selectNo);
+	err = memblaze_fw_commit(l, selectNo);
 
 	if (err == 0x10B || err == 0x20B) {
 		err = 0;
@@ -1001,7 +1007,9 @@ static int mb_lat_stats_log_print(int argc, char **argv, struct command *cmd, st
 	char stats[LOG_PAGE_SIZE];
 	char f1[] = FID_C1_LOG_FILENAME;
 	char f2[] = FID_C2_LOG_FILENAME;
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
+
 	int err;
 
 	const char *desc = "Get Latency Statistics log and show it.";
@@ -1019,11 +1027,11 @@ static int mb_lat_stats_log_print(int argc, char **argv, struct command *cmd, st
 		OPT_END()
 	};
 
-	err = parse_and_open(&dev, argc, argv, desc, opts);
+	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
 		return err;
 
-	err = nvme_get_log_simple(dev_fd(dev), cfg.write ? 0xc2 : 0xc1, sizeof(stats), &stats);
+	err = nvme_get_log_simple(l, cfg.write ? 0xc2 : 0xc1, sizeof(stats), &stats);
 	if (!err)
 		io_latency_histogram(cfg.write ? f2 : f1, stats, DO_PRINT_FLAG,
 				     cfg.write ? GLP_ID_VU_GET_WRITE_LATENCY_HISTOGRAM :
@@ -1038,7 +1046,9 @@ static int memblaze_clear_error_log(int argc, char **argv, struct command *cmd,
 		struct plugin *plugin)
 {
 	char *desc = "Clear Memblaze devices error log.";
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
+
 	int err;
 
 	__u32 result;
@@ -1059,13 +1069,12 @@ static int memblaze_clear_error_log(int argc, char **argv, struct command *cmd,
 		OPT_END()
 	};
 
-	err = parse_and_open(&dev, argc, argv, desc, opts);
+	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
 		return err;
 
 	struct nvme_set_features_args args = {
 		.args_size		= sizeof(args),
-		.fd			= dev_fd(dev),
 		.fid			= cfg.feature_id,
 		.nsid			= 0,
 		.cdw11			= cfg.value,
@@ -1078,7 +1087,7 @@ static int memblaze_clear_error_log(int argc, char **argv, struct command *cmd,
 		.timeout		= NVME_DEFAULT_IOCTL_TIMEOUT,
 		.result			= &result,
 	};
-	err = nvme_set_features(&args);
+	err = nvme_set_features(l, &args);
 	if (err < 0)
 		perror("set-feature");
 	if (!err)
@@ -1104,7 +1113,9 @@ static int mb_set_lat_stats(int argc, char **argv, struct command *command, stru
 	const __u32 cdw12 = 0x0;
 	const __u32 data_len = 32;
 	const __u32 save = 0;
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
+
 	void *buf = NULL;
 	__u32 result;
 	int err;
@@ -1124,7 +1135,7 @@ static int mb_set_lat_stats(int argc, char **argv, struct command *command, stru
 		{NULL}
 	};
 
-	err = parse_and_open(&dev, argc, argv, desc, command_line_options);
+	err = parse_and_open(&r, &l, argc, argv, desc, command_line_options);
 
 	enum Option {
 		None = -1,
@@ -1140,7 +1151,6 @@ static int mb_set_lat_stats(int argc, char **argv, struct command *command, stru
 
 	struct nvme_get_features_args args_get = {
 		.args_size	= sizeof(args_get),
-		.fd		= dev_fd(dev),
 		.fid		= fid,
 		.nsid		= nsid,
 		.sel		= sel,
@@ -1154,7 +1164,6 @@ static int mb_set_lat_stats(int argc, char **argv, struct command *command, stru
 
 	struct nvme_set_features_args args_set = {
 		.args_size	= sizeof(args_set),
-		.fd		= dev_fd(dev),
 		.fid		= fid,
 		.nsid		= nsid,
 		.cdw11		= option,
@@ -1172,7 +1181,7 @@ static int mb_set_lat_stats(int argc, char **argv, struct command *command, stru
 		return err;
 	switch (option) {
 	case None:
-		err = nvme_get_features(&args_get);
+		err = nvme_get_features(l, &args_get);
 		if (!err) {
 			printf("Latency Statistics Tracking (FID 0x%X) is currently (%i).\n", fid,
 			       result);
@@ -1183,7 +1192,7 @@ static int mb_set_lat_stats(int argc, char **argv, struct command *command, stru
 		break;
 	case True:
 	case False:
-			err = nvme_set_features(&args_set);
+			err = nvme_set_features(l, &args_set);
 		if (err > 0) {
 			nvme_show_status(err);
 		} else if (err < 0) {
@@ -1606,9 +1615,11 @@ static int mb_get_smart_log_add(int argc, char **argv, struct command *cmd, stru
 		OPT_FLAG("raw-binary", 'b', &cfg.raw_binary, "dump the whole log buffer in binary format"),
 		OPT_END()};
 
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
 
-	err = parse_and_open(&dev, argc, argv, cmd->help, opts);
+
+	err = parse_and_open(&r, &l, argc, argv, cmd->help, opts);
 	if (err)
 		return err;
 
@@ -1616,11 +1627,11 @@ static int mb_get_smart_log_add(int argc, char **argv, struct command *cmd, stru
 
 	struct smart_log_add log = {0};
 
-	err = nvme_get_log_simple(dev_fd(dev), LID_SMART_LOG_ADD, sizeof(struct smart_log_add),
+	err = nvme_get_log_simple(l, LID_SMART_LOG_ADD, sizeof(struct smart_log_add),
 			&log);
 	if (!err) {
 		if (!cfg.raw_binary)
-			smart_log_add_print(&log, dev->name);
+			smart_log_add_print(&log, nvme_link_get_name(l));
 		else
 			d_raw((unsigned char *)&log, sizeof(struct smart_log_add));
 	} else if (err > 0) {
@@ -1767,9 +1778,11 @@ static int mb_set_latency_feature(int argc, char **argv, struct command *cmd, st
 		  "set trim high latency log threshold, it's a 0-based value and unit is 10ms"),
 		OPT_END()};
 
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
 
-	err = parse_and_open(&dev, argc, argv, cmd->help, opts);
+
+	err = parse_and_open(&r, &l, argc, argv, cmd->help, opts);
 	if (err)
 		return err;
 
@@ -1780,7 +1793,6 @@ static int mb_set_latency_feature(int argc, char **argv, struct command *cmd, st
 
 	struct nvme_set_features_args args = {
 		.args_size = sizeof(args),
-		.fd        = dev_fd(dev),
 		.fid       = FID_LATENCY_FEATURE,
 		.nsid      = 0,
 		.cdw11     = 0 | cfg.perf_monitor,
@@ -1798,7 +1810,7 @@ static int mb_set_latency_feature(int argc, char **argv, struct command *cmd, st
 		.result    = &result,
 	};
 
-	err = nvme_set_features(&args);
+	err = nvme_set_features(l, &args);
 	if (!err)
 		printf("%s have done successfully. result = %#" PRIx32 ".\n", cmd->name, result);
 	else if (err > 0)
@@ -1818,9 +1830,10 @@ static int mb_get_latency_feature(int argc, char **argv, struct command *cmd, st
 	OPT_ARGS(opts) = {
 		OPT_END()};
 
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
 
-	err = parse_and_open(&dev, argc, argv, cmd->help, opts);
+	err = parse_and_open(&r, &l, argc, argv, cmd->help, opts);
 	if (err)
 		return err;
 
@@ -1828,7 +1841,7 @@ static int mb_get_latency_feature(int argc, char **argv, struct command *cmd, st
 
 	uint32_t result = 0;
 
-	err = nvme_get_features_simple(dev_fd(dev), FID_LATENCY_FEATURE, 0, &result);
+	err = nvme_get_features_simple(l, FID_LATENCY_FEATURE, 0, &result);
 	if (!err) {
 		printf("%s have done successfully. result = %#" PRIx32 ".\n", cmd->name, result);
 
@@ -1969,9 +1982,10 @@ static int mb_get_latency_stats(int argc, char **argv, struct command *cmd, stru
 			"dump the whole log buffer in binary format"),
 		OPT_END()};
 
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
 
-	int err = parse_and_open(&dev, argc, argv, cmd->help, opts);
+	int err = parse_and_open(&r, &l, argc, argv, cmd->help, opts);
 
 	if (err)
 		return err;
@@ -1980,11 +1994,11 @@ static int mb_get_latency_stats(int argc, char **argv, struct command *cmd, stru
 
 	struct latency_stats log = {0};
 
-	err = nvme_get_log_simple(dev_fd(dev), LID_LATENCY_STATISTICS, sizeof(struct latency_stats),
+	err = nvme_get_log_simple(l, LID_LATENCY_STATISTICS, sizeof(struct latency_stats),
 				  &log);
 	if (!err) {
 		if (!cfg.raw_binary)
-			latency_stats_print(&log, dev->name);
+			latency_stats_print(&log, nvme_link_get_name(l));
 		else
 			d_raw((unsigned char *)&log, sizeof(struct latency_stats));
 	} else if (err > 0) {
@@ -2075,10 +2089,10 @@ static int mb_get_high_latency_log(int argc, char **argv, struct command *cmd,
 			"dump the whole log buffer in binary format"),
 		OPT_END()};
 
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
 
-	int err = parse_and_open(&dev, argc, argv, cmd->help, opts);
-
+	int err = parse_and_open(&r, &l, argc, argv, cmd->help, opts);
 	if (err)
 		return err;
 
@@ -2086,11 +2100,11 @@ static int mb_get_high_latency_log(int argc, char **argv, struct command *cmd,
 
 	struct high_latency_log log = {0};
 
-	err = nvme_get_log_simple(dev_fd(dev), LID_HIGH_LATENCY_LOG,
+	err = nvme_get_log_simple(l, LID_HIGH_LATENCY_LOG,
 				  sizeof(struct high_latency_log), &log);
 	if (!err) {
 		if (!cfg.raw_binary)
-			high_latency_log_print(&log, dev->name);
+			high_latency_log_print(&log, nvme_link_get_name(l));
 		else
 			d_raw((unsigned char *)&log, sizeof(struct high_latency_log));
 	} else if (err > 0) {
@@ -2322,9 +2336,10 @@ static int mb_get_performance_stats(int argc, char **argv, struct command *cmd,
 			"dump the whole log buffer in binary format"),
 		OPT_END()};
 
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
 
-	int err = parse_and_open(&dev, argc, argv, cmd->help, opts);
+	int err = parse_and_open(&r, &l, argc, argv, cmd->help, opts);
 
 	if (err)
 		return err;
@@ -2344,10 +2359,10 @@ static int mb_get_performance_stats(int argc, char **argv, struct command *cmd,
 	int xfer_size = (cfg.duration % 2) > 0 ?
 		(4 + (cfg.duration + 1) * sizeof(struct performance_stats_timestamp)) : log_size;
 
-	err = nvme_get_log_simple(dev_fd(dev), LID_PERFORMANCE_STATISTICS, xfer_size, &log);
+	err = nvme_get_log_simple(l, LID_PERFORMANCE_STATISTICS, xfer_size, &log);
 	if (!err) {
 		if (!cfg.raw_binary)
-			performance_stats_print(&log, dev->name, cfg.duration);
+			performance_stats_print(&log, nvme_link_get_name(l), cfg.duration);
 		else
 			d_raw((unsigned char *)&log, log_size);
 	} else if (err > 0) {

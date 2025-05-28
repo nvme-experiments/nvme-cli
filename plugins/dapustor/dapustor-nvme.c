@@ -482,19 +482,19 @@ static void show_dapustor_smart_log(struct nvme_additional_smart_log *smart,
 }
 
 static int dapustor_additional_smart_log_data(
-		int dev_fd,
+		nvme_link_t l,
 		struct nvme_additional_smart_log *smart_log,
 		struct nvme_extended_additional_smart_log *ext_smart_log,
 		bool *has_ext)
 {
 	int err;
 
-	err = nvme_get_log_simple(dev_fd, 0xca, sizeof(*smart_log), smart_log);
+	err = nvme_get_log_simple(l, 0xca, sizeof(*smart_log), smart_log);
 	if (err) {
 		nvme_show_status(err);
 		return err;
 	}
-	err = nvme_get_log_simple(dev_fd, 0xcb, sizeof(*ext_smart_log), ext_smart_log);
+	err = nvme_get_log_simple(l, 0xcb, sizeof(*ext_smart_log), ext_smart_log);
 	*has_ext = !err;
 	return 0;
 }
@@ -511,7 +511,8 @@ static int dapustor_additional_smart_log(int argc, char **argv, struct command *
 
 	struct nvme_additional_smart_log smart_log;
 	struct nvme_extended_additional_smart_log ext_smart_log;
-	struct nvme_dev *dev;
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	int err;
 	bool has_ext = false;
 
@@ -532,24 +533,23 @@ static int dapustor_additional_smart_log(int argc, char **argv, struct command *
 		OPT_END()
 	};
 
-	err = parse_and_open(&dev, argc, argv, desc, opts);
+	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
 		return err;
 
-	err = dapustor_additional_smart_log_data(dev_fd(dev), &smart_log, &ext_smart_log, &has_ext);
+	err = dapustor_additional_smart_log_data(l, &smart_log, &ext_smart_log, &has_ext);
 	if (!err) {
 		if (cfg.json)
 			show_dapustor_smart_log_jsn(&smart_log, &ext_smart_log,
-						    cfg.namespace_id, dev->name, has_ext);
+						    cfg.namespace_id, nvme_link_get_name(l), has_ext);
 		else if (!cfg.raw_binary)
 			show_dapustor_smart_log(&smart_log, &ext_smart_log,
-						cfg.namespace_id, dev->name, has_ext);
+						cfg.namespace_id, nvme_link_get_name(l), has_ext);
 		else {
 			d_raw((unsigned char *)&smart_log, sizeof(smart_log));
 			if (has_ext)
 				d_raw((unsigned char *)&ext_smart_log, sizeof(ext_smart_log));
 		}
 	}
-	dev_close(dev);
 	return err;
 }

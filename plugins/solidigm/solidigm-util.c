@@ -26,10 +26,10 @@ int sldgm_find_uuid_index(struct nvme_id_uuid_list *uuid_list, __u8 *index)
 	return 0;
 }
 
-int sldgm_get_uuid_index(struct nvme_dev *dev, __u8 *index)
+int sldgm_get_uuid_index(nvme_link_t l, __u8 *index)
 {
 	struct nvme_id_uuid_list uuid_list;
-	int err = nvme_identify_uuid(dev_fd(dev), &uuid_list);
+	int err = nvme_identify_uuid(l, &uuid_list);
 
 	*index = 0;
 	if (err)
@@ -38,7 +38,7 @@ int sldgm_get_uuid_index(struct nvme_dev *dev, __u8 *index)
 	return sldgm_find_uuid_index(&uuid_list, index);
 }
 
-int sldgm_dynamic_telemetry(int dev_fd, bool create, bool ctrl, bool log_page, __u8 mtds,
+int sldgm_dynamic_telemetry(nvme_link_t l, bool create, bool ctrl, bool log_page, __u8 mtds,
 			    enum nvme_telemetry_da da, struct nvme_telemetry_log **log_buffer,
 			    size_t *log_buffer_size)
 {
@@ -46,7 +46,7 @@ int sldgm_dynamic_telemetry(int dev_fd, bool create, bool ctrl, bool log_page, _
 	size_t max_data_tx = (1 << mtds) * NVME_LOG_PAGE_PDU_SIZE;
 
 	do {
-		err = nvme_get_telemetry_log(dev_fd, create, ctrl, log_page, max_data_tx, da,
+		err = nvme_get_telemetry_log(l, create, ctrl, log_page, max_data_tx, da,
 					     log_buffer, log_buffer_size);
 		max_data_tx /= 2;
 		create = false;

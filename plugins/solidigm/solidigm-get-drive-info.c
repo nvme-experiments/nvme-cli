@@ -7,17 +7,16 @@
 
 #include <errno.h>
 #include "nvme-print.h"
-#include "nvme-wrap.h"
 #include "common.h"
 
 int sldgm_get_drive_info(int argc, char **argv, struct command *cmd, struct plugin *plugin)
 {
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
 	const char *desc = "Get drive HW information";
 	const char *FTL_unit_size_str = "FTL_unit_size";
 	char *output_format = "normal";
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	nvme_print_flags_t flags;
-	nvme_root_t r;
 	nvme_ctrl_t c;
 	nvme_ns_t n;
 	struct nvme_id_ns ns = { 0 };
@@ -31,7 +30,7 @@ int sldgm_get_drive_info(int argc, char **argv, struct command *cmd, struct plug
 		OPT_END()
 	};
 
-	err = parse_and_open(&dev, argc, argv, desc, opts);
+	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -42,8 +41,8 @@ int sldgm_get_drive_info(int argc, char **argv, struct command *cmd, struct plug
 	}
 
 	r = nvme_scan(NULL);
-	c = nvme_scan_ctrl(r, dev->name);
-	n = c ? nvme_ctrl_first_ns(c) : nvme_scan_namespace(dev->name);
+	c = nvme_scan_ctrl(r, nvme_link_get_name(l));
+	n = c ? nvme_ctrl_first_ns(c) : nvme_scan_namespace(nvme_link_get_name(l));
 	if (!n) {
 		nvme_show_error("solidigm-vs-drive-info: drive missing namespace");
 		return -EINVAL;

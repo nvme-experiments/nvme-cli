@@ -132,7 +132,6 @@ struct config {
 };
 
 struct ilog {
-	struct nvme_dev *dev;
 	struct config *cfg;
 	int count;
 	struct nvme_id_ctrl id_ctrl;
@@ -173,7 +172,7 @@ static void print_nlog_header(__u8 *buffer)
 #define INTERNAL_LOG_MAX_DWORD_TRANSFER (INTERNAL_LOG_MAX_BYTE_TRANSFER / 4)
 
 static int cmd_dump_repeat(struct nvme_passthru_cmd *cmd, __u32 total_dw_size,
-			   int out_fd, int ioctl_fd, bool force_max_transfer)
+			   int out_fd, nvme_link_t l, bool force_max_transfer)
 {
 	int err = 0;
 
@@ -182,7 +181,7 @@ static int cmd_dump_repeat(struct nvme_passthru_cmd *cmd, __u32 total_dw_size,
 
 		cmd->cdw10 = force_max_transfer ? INTERNAL_LOG_MAX_DWORD_TRANSFER : dword_tfer;
 		cmd->data_len = dword_tfer * 4;
-		err = nvme_submit_admin_passthru(ioctl_fd, cmd, NULL);
+		err = nvme_submit_admin_passthru(l, cmd, NULL);
 		if (err)
 			return err;
 
@@ -207,18 +206,18 @@ static int write_header(__u8 *buf, int fd, size_t amnt)
 	return 0;
 }
 
-static int read_header(struct nvme_passthru_cmd *cmd, int ioctl_fd)
+static int read_header(struct nvme_passthru_cmd *cmd, nvme_link_t l)
 {
 	memset((void *)(uintptr_t)cmd->addr, 0, INTERNAL_LOG_MAX_BYTE_TRANSFER);
-	return cmd_dump_repeat(cmd, INTERNAL_LOG_MAX_DWORD_TRANSFER, -1, ioctl_fd, false);
+	return cmd_dump_repeat(cmd, INTERNAL_LOG_MAX_DWORD_TRANSFER, -1, l, false);
 }
 
-static int get_serial_number(char *str, int fd)
+static int get_serial_number(char *str, nvme_link_t l)
 {
 	struct nvme_id_ctrl ctrl = {0};
 	int err;
 
-	err = nvme_identify_ctrl(fd, &ctrl);
+	err = nvme_identify_ctrl(l, &ctrl);
 	if (err)
 		return err;
 
@@ -229,7 +228,7 @@ static int get_serial_number(char *str, int fd)
 	return err;
 }
 
-static int ilog_dump_assert_logs(struct ilog *ilog)
+static int ilog_dump_assert_logs(nvme_link_t l, struct ilog *ilog)
 {
 	__u8 buf[INTERNAL_LOG_MAX_BYTE_TRANSFER];
 	__u8 head_buf[INTERNAL_LOG_MAX_BYTE_TRANSFER];
@@ -245,7 +244,7 @@ static int ilog_dump_assert_logs(struct ilog *ilog)
 	};
 	int output, err;
 
-	err = read_header(&cmd, dev_fd(ilog->dev));
+	err = read_header(&cmd, l);
 	if (err)
 		return err;
 
@@ -276,7 +275,7 @@ static int ilog_dump_assert_logs(struct ilog *ilog)
 			continue;
 		cmd.cdw13 = ad->core[i].coreoffset;
 		err = cmd_dump_repeat(&cmd, ad->core[i].assertsize, output,
-				      dev_fd(ilog->dev), false);
+				      l, false);
 		if (err) {
 			close(output);
 			return err;
@@ -287,7 +286,7 @@ static int ilog_dump_assert_logs(struct ilog *ilog)
 	return err;
 }
 
-static int ilog_dump_event_logs(struct ilog *ilog)
+static int ilog_dump_event_logs(nvme_link_t l, struct ilog *ilog)
 {
 	__u8 buf[INTERNAL_LOG_MAX_BYTE_TRANSFER];
 	__u8 head_buf[INTERNAL_LOG_MAX_BYTE_TRANSFER];
@@ -303,7 +302,7 @@ static int ilog_dump_event_logs(struct ilog *ilog)
 	int output;
 	int core_num, err;
 
-	err = read_header(&cmd, dev_fd(ilog->dev));
+	err = read_header(&cmd, l);
 	if (err)
 		return err;
 	if (asprintf(&file_path, "%s/EventLog.bin", ilog->cfg->out_dir))
@@ -334,7 +333,7 @@ static int ilog_dump_event_logs(struct ilog *ilog)
 		}
 		cmd.cdw13 = ehdr->edumps[j].coreoffset;
 		err = cmd_dump_repeat(&cmd, ehdr->edumps[j].coresize,
-				output, dev_fd(ilog->dev), false);
+				output, l, false);
 		if (err) {
 			close(output);
 			return err;
@@ -361,7 +360,7 @@ static size_t get_nlog_header_size(struct nlog_dump_header_common *nlog_header)
 }
 
 /* dumps nlogs from specified core or all cores when core = -1 */
-static int ilog_dump_nlogs(struct ilog *ilog, int core)
+static int ilog_dump_nlogs(nvme_link_t l, struct ilog *ilog, int core)
 {
 	int err = 0;
 	__u32 count, core_num;
@@ -394,7 +393,7 @@ static int ilog_dump_nlogs(struct ilog *ilog, int core)
 		do {
 			cmd.cdw13 = 0;
 			cmd.cdw12 = log_select.raw;
-			err = read_header(&cmd, dev_fd(ilog->dev));
+			err = read_header(&cmd, l);
 			if (err) {
 				if (is_open)
 					close(output);
@@ -420,7 +419,7 @@ static int ilog_dump_nlogs(struct ilog *ilog, int core)
 				print_nlog_header(buf);
 			cmd.cdw13 = 0x400;
 			err = cmd_dump_repeat(&cmd, nlog_header->nlogbytesize / 4,
-				output, dev_fd(ilog->dev), true);
+				output, l, true);
 			if (err)
 				break;
 		} while (++log_select.selectNlog < count);
@@ -490,12 +489,12 @@ static int log_save(struct log *log, const char *parent_dir_name, const char *su
 	return 0;
 }
 
-static int ilog_dump_identify_page(struct ilog *ilog, struct log *cns, __u32 nsid)
+static int ilog_dump_identify_page(nvme_link_t l, struct ilog *ilog, struct log *cns, __u32 nsid)
 {
 	__u8 data[NVME_IDENTIFY_DATA_SIZE];
 	__u8 *buff = cns->buffer ? cns->buffer : data;
 	_cleanup_free_ char *filename = NULL;
-	int err = nvme_identify_cns_nsid(dev_fd(ilog->dev), cns->id, nsid, buff);
+	int err = nvme_identify_cns_nsid(l, cns->id, nsid, buff);
 
 	if (err)
 		return err;
@@ -506,7 +505,7 @@ static int ilog_dump_identify_page(struct ilog *ilog, struct log *cns, __u32 nsi
 	return log_save(cns, ilog->cfg->out_dir, "identify", filename, buff, sizeof(data));
 }
 
-static int ilog_ensure_dump_id_ctrl(struct ilog *ilog)
+static int ilog_ensure_dump_id_ctrl(nvme_link_t l, struct ilog *ilog)
 {
 	static bool first = true;
 	static int err;
@@ -517,7 +516,7 @@ static int ilog_ensure_dump_id_ctrl(struct ilog *ilog)
 		return err;
 
 	first = false;
-	err = ilog_dump_identify_page(ilog, &idctrl, 0);
+	err = ilog_dump_identify_page(l, ilog, &idctrl, 0);
 
 	if (err)
 		return err;
@@ -532,7 +531,7 @@ static int ilog_ensure_dump_id_ctrl(struct ilog *ilog)
 	return err;
 }
 
-static int ilog_dump_telemetry(struct ilog *ilog, enum log_type ttype)
+static int ilog_dump_telemetry(nvme_link_t l, struct ilog *ilog, enum log_type ttype)
 {
 	int err = 0;
 	enum nvme_telemetry_da da;
@@ -542,7 +541,7 @@ static int ilog_dump_telemetry(struct ilog *ilog, enum log_type ttype)
 	bool host_behavior_changed = false;
 	struct log log = {0};
 
-	err = ilog_ensure_dump_id_ctrl(ilog);
+	err = ilog_ensure_dump_id_ctrl(l, ilog);
 	if (err)
 		return err;
 
@@ -551,13 +550,13 @@ static int ilog_dump_telemetry(struct ilog *ilog, enum log_type ttype)
 
 	if (da == 4) {
 		__u32 result;
-		int err = nvme_get_features_host_behavior(dev_fd(ilog->dev), 0, &prev, &result);
+		int err = nvme_get_features_host_behavior(l, 0, &prev, &result);
 
 		if (!err && !prev.etdas) {
 			struct nvme_feat_host_behavior da4_enable = prev;
 
 			da4_enable.etdas = 1;
-			nvme_set_features_host_behavior(dev_fd(ilog->dev), 0, &da4_enable);
+			nvme_set_features_host_behavior(l, 0, &da4_enable);
 			host_behavior_changed = true;
 		}
 	}
@@ -566,14 +565,14 @@ static int ilog_dump_telemetry(struct ilog *ilog, enum log_type ttype)
 	case HIT:
 		file_name = "lid_0x07_lsp_0x01_lsi_0x0000.bin";
 		log.desc = "Host Initiated Telemetry";
-		err = sldgm_dynamic_telemetry(dev_fd(ilog->dev), true, false, false, mdts,
+		err = sldgm_dynamic_telemetry(l, true, false, false, mdts,
 					      da, (struct nvme_telemetry_log **) &log.buffer,
 					      &log.buffer_size);
 		break;
 	case CIT:
 		file_name = "lid_0x08_lsp_0x00_lsi_0x0000.bin";
 		log.desc = "Controller Initiated Telemetry";
-		err = sldgm_dynamic_telemetry(dev_fd(ilog->dev), false, true, true, mdts,
+		err = sldgm_dynamic_telemetry(l, false, true, true, mdts,
 					      da, (struct nvme_telemetry_log **) &log.buffer,
 					      &log.buffer_size);
 		break;
@@ -582,7 +581,7 @@ static int ilog_dump_telemetry(struct ilog *ilog, enum log_type ttype)
 	}
 
 	if (host_behavior_changed)
-		nvme_set_features_host_behavior(dev_fd(ilog->dev), 0, &prev);
+		nvme_set_features_host_behavior(l, 0, &prev);
 
 	if (err)
 		return err;
@@ -592,7 +591,7 @@ static int ilog_dump_telemetry(struct ilog *ilog, enum log_type ttype)
 	return err;
 }
 
-static int ilog_dump_identify_pages(struct ilog *ilog)
+static int ilog_dump_identify_pages(nvme_link_t l, struct ilog *ilog)
 {
 	struct nvme_ns_list ns_attached_list;
 	struct nvme_ns_list ns_allocated_list;
@@ -619,10 +618,10 @@ static int ilog_dump_identify_pages(struct ilog *ilog)
 	struct log allocated = {NVME_IDENTIFY_CNS_ALLOCATED_NS, "Allocated Namespace Data",
 				NVME_IDENTIFY_DATA_SIZE, NULL};
 
-	ilog_ensure_dump_id_ctrl(ilog);
+	ilog_ensure_dump_id_ctrl(l, ilog);
 
 	for (int i = 0; i < ARRAY_SIZE(identify_base_list); i++) {
-		int err = ilog_dump_identify_page(ilog, &identify_base_list[i], 0);
+		int err = ilog_dump_identify_page(l, ilog, &identify_base_list[i], 0);
 
 		if (err == 0)
 			ilog->count++;
@@ -630,7 +629,7 @@ static int ilog_dump_identify_pages(struct ilog *ilog)
 
 	while (ns_attached_list.ns[j]) {
 		for (int i = 0; i < ARRAY_SIZE(identify_ns_required_list); i++) {
-			int err = ilog_dump_identify_page(ilog, &identify_ns_required_list[i],
+			int err = ilog_dump_identify_page(l, ilog, &identify_ns_required_list[i],
 							  ns_attached_list.ns[j]);
 
 			if (err == 0)
@@ -641,7 +640,7 @@ static int ilog_dump_identify_pages(struct ilog *ilog)
 
 	j = 0;
 	while (ns_allocated_list.ns[j]) {
-		int err = ilog_dump_identify_page(ilog, &allocated, ns_allocated_list.ns[j]);
+		int err = ilog_dump_identify_page(l, ilog, &allocated, ns_allocated_list.ns[j]);
 
 		if (err == 0)
 			ilog->count++;
@@ -651,7 +650,7 @@ static int ilog_dump_identify_pages(struct ilog *ilog)
 	return 0;
 }
 
-static int ilog_dump_log_page(struct ilog *ilog, struct log *lp, __u32 nsid)
+static int ilog_dump_log_page(nvme_link_t l, struct ilog *ilog, struct log *lp, __u32 nsid)
 {
 	__u8 *buff = lp->buffer;
 	_cleanup_free_ char *filename = NULL;
@@ -664,7 +663,7 @@ static int ilog_dump_log_page(struct ilog *ilog, struct log *lp, __u32 nsid)
 		if (!buff)
 			return -ENOMEM;
 	}
-	err = nvme_get_nsid_log(dev_fd(ilog->dev), 0, lp->id, 0, lp->buffer_size, buff);
+	err = nvme_get_nsid_log(l, 0, lp->id, 0, lp->buffer_size, buff);
 	if (err)
 		return err;
 
@@ -674,7 +673,7 @@ static int ilog_dump_log_page(struct ilog *ilog, struct log *lp, __u32 nsid)
 	return log_save(lp, ilog->cfg->out_dir, "log_pages", filename, buff, lp->buffer_size);
 }
 
-static int ilog_dump_no_lsp_log_pages(struct ilog *ilog)
+static int ilog_dump_no_lsp_log_pages(nvme_link_t l, struct ilog *ilog)
 {
 	struct lba_status_info {
 		__u32 lslplen;
@@ -722,7 +721,7 @@ static int ilog_dump_no_lsp_log_pages(struct ilog *ilog)
 		log_page_base_list[i].desc = log_page_base_list[i].desc ?
 			log_page_base_list[i].desc :
 			nvme_log_to_string(log_page_base_list[i].id);
-		if (!ilog_dump_log_page(ilog, &log_page_base_list[i], 0))
+		if (!ilog_dump_log_page(l, ilog, &log_page_base_list[i], 0))
 			ilog->count++;
 	}
 
@@ -737,13 +736,13 @@ static int ilog_dump_no_lsp_log_pages(struct ilog *ilog)
 		log_page_dependent_list[i].desc = log_page_dependent_list[i].desc ?
 			log_page_dependent_list[i].desc :
 			nvme_log_to_string(log_page_dependent_list[i].id);
-		ilog_dump_log_page(ilog, &log_page_dependent_list[i], 0);
+		ilog_dump_log_page(l, ilog, &log_page_dependent_list[i], 0);
 	}
 
 	return 0;
 }
 
-static int ilog_dump_pel(struct ilog *ilog)
+static int ilog_dump_pel(nvme_link_t l, struct ilog *ilog)
 {
 	struct log lp = {
 		NVME_LOG_LID_PERSISTENT_EVENT,
@@ -758,7 +757,7 @@ static int ilog_dump_pel(struct ilog *ilog)
 
 	_cleanup_huge_ struct nvme_mem_huge mh = {0};
 
-	err = nvme_get_log_persistent_event(dev_fd(ilog->dev), NVME_PEVENT_LOG_RELEASE_CTX,
+	err = nvme_get_log_persistent_event(l, NVME_PEVENT_LOG_RELEASE_CTX,
 					    sizeof(*pevent), pevent);
 	if (err)
 		return err;
@@ -768,7 +767,7 @@ static int ilog_dump_pel(struct ilog *ilog)
 	if (!pevent)
 		return -ENOMEM;
 
-	err = nvme_get_log_persistent_event(dev_fd(ilog->dev), NVME_PEVENT_LOG_EST_CTX_AND_READ,
+	err = nvme_get_log_persistent_event(l, NVME_PEVENT_LOG_EST_CTX_AND_READ,
 					    sizeof(*pevent), pevent);
 	if (err)
 		return err;
@@ -779,14 +778,13 @@ static int ilog_dump_pel(struct ilog *ilog)
 	if (!pevent_log_full)
 		return -ENOMEM;
 
-	err = nvme_get_log_persistent_event(dev_fd(ilog->dev), NVME_PEVENT_LOG_READ,
+	err = nvme_get_log_persistent_event(l, NVME_PEVENT_LOG_READ,
 						lp.buffer_size, pevent_log_full);
 	args = (struct nvme_get_log_args) {
 		.lpo = 0,
 		.result = NULL,
 		.log = pevent_log_full,
 		.args_size = sizeof(args),
-		.fd = dev_fd(ilog->dev),
 		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
 		.lid = NVME_LOG_LID_PERSISTENT_EVENT,
 		.len = lp.buffer_size,
@@ -801,7 +799,7 @@ static int ilog_dump_pel(struct ilog *ilog)
 
 	max_data_tx = (1 << ilog->id_ctrl.mdts) * NVME_LOG_PAGE_PDU_SIZE;
 	do {
-		err = nvme_get_log_page(dev_fd(ilog->dev), max_data_tx, &args);
+		err = nvme_get_log_page(l, max_data_tx, &args);
 		max_data_tx /= 2;
 	} while (err == -EPERM && max_data_tx >= NVME_LOG_PAGE_PDU_SIZE);
 
@@ -811,7 +809,7 @@ static int ilog_dump_pel(struct ilog *ilog)
 	err = log_save(&lp, ilog->cfg->out_dir, "log_pages", "lid_0x0d_lsp_0x00_lsi_0x0000.bin",
 		       pevent_log_full, lp.buffer_size);
 
-	nvme_get_log_persistent_event(dev_fd(ilog->dev), NVME_PEVENT_LOG_RELEASE_CTX,
+	nvme_get_log_persistent_event(l, NVME_PEVENT_LOG_RELEASE_CTX,
 				      sizeof(*pevent), pevent);
 
 	return err;
@@ -825,12 +823,12 @@ int solidigm_get_internal_log(int argc, char **argv, struct command *command,
 	_cleanup_free_ char *full_folder = NULL;
 	_cleanup_free_ char *unique_folder = NULL;
 	_cleanup_free_ char *zip_name = NULL;
-
+	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	char *initial_folder;
 	char *output_path;
 	struct ilog ilog = {0};
 	int err;
-	_cleanup_nvme_dev_ struct nvme_dev *dev = NULL;
 	enum log_type log_type = ALL;
 	char type_ALL[] = "ALL";
 	time_t current_time;
@@ -853,10 +851,9 @@ int solidigm_get_internal_log(int argc, char **argv, struct command *command,
 		OPT_END()
 	};
 
-	err = parse_and_open(&dev, argc, argv, desc, opts);
+	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
 		return err;
-	ilog.dev = dev;
 	ilog.cfg = &cfg;
 
 	for (char *p = cfg.type; *p; ++p)
@@ -889,7 +886,7 @@ int solidigm_get_internal_log(int argc, char **argv, struct command *command,
 
 	initial_folder = cfg.out_dir;
 
-	err = get_serial_number(sn_prefix, dev_fd(dev));
+	err = get_serial_number(sn_prefix, l);
 	if (err)
 		return err;
 
@@ -910,50 +907,50 @@ int solidigm_get_internal_log(int argc, char **argv, struct command *command,
 
 	/* Retrieve first logs that records actions to retrieve other logs */
 	if (log_type == ALL || log_type == HIT) {
-		err = ilog_dump_telemetry(&ilog, HIT);
+		err = ilog_dump_telemetry(l, &ilog, HIT);
 		if (err == 0)
 			ilog.count++;
 		else if (err < 0)
 			perror("Error retrieving Host Initiated Telemetry");
 	}
 	if (log_type == ALL || log_type == NLOG) {
-		err = ilog_dump_nlogs(&ilog, -1);
+		err = ilog_dump_nlogs(l, &ilog, -1);
 		if (err == 0)
 			ilog.count++;
 		else if (err < 0)
 			perror("Error retrieving Nlog");
 	}
 	if (log_type == ALL || log_type == CIT) {
-		err = ilog_dump_telemetry(&ilog, CIT);
+		err = ilog_dump_telemetry(l, &ilog, CIT);
 		if (err == 0)
 			ilog.count++;
 		else if (err < 0)
 			perror("Error retrieving Controller Initiated Telemetry");
 	}
 	if (log_type == ALL || log_type == ASSERTLOG) {
-		err = ilog_dump_assert_logs(&ilog);
+		err = ilog_dump_assert_logs(l, &ilog);
 		if (err == 0)
 			ilog.count++;
 		else if (err < 0)
 			perror("Error retrieving Assert log");
 	}
 	if (log_type == ALL || log_type == EVENTLOG) {
-		err = ilog_dump_event_logs(&ilog);
+		err = ilog_dump_event_logs(l, &ilog);
 		if (err == 0)
 			ilog.count++;
 		else if (err < 0)
 			perror("Error retrieving Event log");
 	}
 	if (log_type == ALL) {
-		err = ilog_dump_identify_pages(&ilog);
+		err = ilog_dump_identify_pages(l, &ilog);
 		if (err < 0)
 			perror("Error retrieving Identify pages");
 
-		err = ilog_dump_pel(&ilog);
+		err = ilog_dump_pel(l, &ilog);
 		if (err < 0)
 			perror("Error retrieving Persistent Event Log page");
 
-		err = ilog_dump_no_lsp_log_pages(&ilog);
+		err = ilog_dump_no_lsp_log_pages(l, &ilog);
 		if (err < 0)
 			perror("Error retrieving no LSP Log pages");
 	}
