@@ -93,7 +93,7 @@ static void htable_ns_add_unique(struct htable_ns *ht, nvme_ns_t n)
 }
 
 struct nvme_resources {
-	nvme_root_t r;
+	struct nvme_global_ctx *ctx;
 
 	struct htable_subsys ht_s;
 	struct htable_ctrl ht_c;
@@ -103,7 +103,7 @@ struct nvme_resources {
 	struct strset namespaces;
 };
 
-static int nvme_resources_init(nvme_root_t r, struct nvme_resources *res)
+static int nvme_resources_init(struct nvme_global_ctx *ctx, struct nvme_resources *res)
 {
 	nvme_host_t h;
 	nvme_subsystem_t s;
@@ -111,7 +111,7 @@ static int nvme_resources_init(nvme_root_t r, struct nvme_resources *res)
 	nvme_ns_t n;
 	nvme_path_t p;
 
-	res->r = r;
+	res->ctx = ctx;
 	htable_subsys_init(&res->ht_s);
 	htable_ctrl_init(&res->ht_c);
 	htable_ns_init(&res->ht_n);
@@ -119,7 +119,7 @@ static int nvme_resources_init(nvme_root_t r, struct nvme_resources *res)
 	strset_init(&res->ctrls);
 	strset_init(&res->namespaces);
 
-	nvme_for_each_host(r, h) {
+	nvme_for_each_host(ctx, h) {
 		nvme_for_each_subsystem(h, s) {
 			htable_subsys_add(&res->ht_s, s);
 			strset_add(&res->subsystems, nvme_subsystem_get_name(s));
@@ -1141,12 +1141,12 @@ static void stdout_subsys_config(nvme_subsystem_t s)
 	}
 }
 
-static void stdout_subsystem(nvme_root_t r, bool show_ana)
+static void stdout_subsystem(struct nvme_global_ctx *ctx, bool show_ana)
 {
 	nvme_host_t h;
 	bool first = true;
 
-	nvme_for_each_host(r, h) {
+	nvme_for_each_host(ctx, h) {
 		nvme_subsystem_t s;
 
 		nvme_for_each_subsystem(h, s) {
@@ -1171,9 +1171,9 @@ static void stdout_subsystem(nvme_root_t r, bool show_ana)
 	}
 }
 
-static void stdout_subsystem_list(nvme_root_t r, bool show_ana)
+static void stdout_subsystem_list(struct nvme_global_ctx *ctx, bool show_ana)
 {
-	stdout_subsystem(r, show_ana);
+	stdout_subsystem(ctx, show_ana);
 }
 
 static void stdout_registers_cap(struct nvme_bar_cap *cap)
@@ -5383,11 +5383,11 @@ static bool stdout_simple_ns(const char *name, void *arg)
 	return true;
 }
 
-static void stdout_simple_list(nvme_root_t r)
+static void stdout_simple_list(struct nvme_global_ctx *ctx)
 {
 	struct nvme_resources res;
 
-	nvme_resources_init(r, &res);
+	nvme_resources_init(ctx, &res);
 
 	printf("%-21s %-21s %-20s %-40s %-10s %-26s %-16s %-8s\n",
 	       "Node", "Generic", "SN", "Model", "Namespace", "Usage", "Format", "FW Rev");
@@ -5553,11 +5553,11 @@ static bool stdout_detailed_ns(const char *name, void *arg)
 	return true;
 }
 
-static void stdout_detailed_list(nvme_root_t r)
+static void stdout_detailed_list(struct nvme_global_ctx *ctx)
 {
 	struct nvme_resources res;
 
-	nvme_resources_init(r, &res);
+	nvme_resources_init(ctx, &res);
 
 	printf("%-16s %-96s %-.16s\n", "Subsystem", "Subsystem-NQN", "Controllers");
 	printf("%-.16s %-.96s %-.16s\n", dash, dash, dash);
@@ -5581,12 +5581,12 @@ static void stdout_detailed_list(nvme_root_t r)
 	nvme_resources_free(&res);
 }
 
-static void stdout_list_items(nvme_root_t r)
+static void stdout_list_items(struct nvme_global_ctx *ctx)
 {
 	if (stdout_print_ops.flags & VERBOSE)
-		stdout_detailed_list(r);
+		stdout_detailed_list(ctx);
 	else
-		stdout_simple_list(r);
+		stdout_simple_list(ctx);
 }
 
 static void stdout_subsystem_topology_multipath(nvme_subsystem_t s,
@@ -5674,14 +5674,14 @@ static void stdout_subsystem_topology(nvme_subsystem_t s,
 	}
 }
 
-static void stdout_simple_topology(nvme_root_t r,
+static void stdout_simple_topology(struct nvme_global_ctx *ctx,
 				   enum nvme_cli_topo_ranking ranking)
 {
 	nvme_host_t h;
 	nvme_subsystem_t s;
 	bool first = true;
 
-	nvme_for_each_host(r, h) {
+	nvme_for_each_host(ctx, h) {
 		nvme_for_each_subsystem(h, s) {
 			if (!first)
 				printf("\n");
@@ -5698,14 +5698,14 @@ static void stdout_simple_topology(nvme_root_t r,
 	}
 }
 
-static void stdout_topology_namespace(nvme_root_t r)
+static void stdout_topology_namespace(struct nvme_global_ctx *ctx)
 {
-	stdout_simple_topology(r, NVME_CLI_TOPO_NAMESPACE);
+	stdout_simple_topology(ctx, NVME_CLI_TOPO_NAMESPACE);
 }
 
-static void stdout_topology_ctrl(nvme_root_t r)
+static void stdout_topology_ctrl(struct nvme_global_ctx *ctx)
 {
-	stdout_simple_topology(r, NVME_CLI_TOPO_CTRL);
+	stdout_simple_topology(ctx, NVME_CLI_TOPO_CTRL);
 }
 
 static void stdout_message(bool error, const char *msg, va_list ap)
@@ -5993,7 +5993,7 @@ static void stdout_pull_model_ddc_req_log(struct nvme_pull_model_ddc_req_log *lo
 	d((unsigned char *)log->osp, osp_len, 16, 1);
 }
 
-static void stdout_relatives(nvme_root_t r, const char *name)
+static void stdout_relatives(struct nvme_global_ctx *ctx, const char *name)
 {
 	struct nvme_resources res;
 	struct htable_ns_iter it;
@@ -6018,7 +6018,7 @@ static void stdout_relatives(nvme_root_t r, const char *name)
 		return;
 	}
 
-	nvme_resources_init(r, &res);
+	nvme_resources_init(ctx, &res);
 
 	if (block) {
 		fprintf(stderr, "Namespace %s has parent controller(s):", name);

@@ -103,8 +103,9 @@ static bool validate_uri(struct nbft_info_discovery *dd,
 	return true;
 }
 
+
 /* returns 0 for success or negative errno otherwise */
-static int do_connect(nvme_root_t r,
+static int do_connect(struct nvme_global_ctx *ctx,
 		      nvme_host_t h,
 		      struct nvmf_disc_log_entry *e,
 		      struct nbft_info_subsystem_ns *ss,
@@ -124,18 +125,19 @@ static int do_connect(nvme_root_t r,
 	if (c && nvme_ctrl_get_name(c))
 		return 0;
 
-	c = nvme_create_ctrl(r, trcfg->subsysnqn, trcfg->transport,
+	ret = nvme_create_ctrl(ctx, trcfg->subsysnqn, trcfg->transport,
 			     trcfg->traddr, trcfg->host_traddr,
-			     trcfg->host_iface, trcfg->trsvcid);
-	if (!c)
-		return -ENOMEM;
+			     trcfg->host_iface, trcfg->trsvcid, &c);
+
+	if (ret)
+		return ret;
 
 	/* Pause logging for unavailable SSNSs */
 	if (ss && ss->unavailable && verbose < 1) {
-		saved_log_level = nvme_get_logging_level(r,
+		saved_log_level = nvme_get_logging_level(ctx,
 							 &saved_log_pid,
 							 &saved_log_tstamp);
-		nvme_init_logging(r, -1, false, false);
+		nvme_init_logging(ctx, -1, false, false);
 	}
 
 	if (e) {
@@ -149,7 +151,7 @@ static int do_connect(nvme_root_t r,
 
 	/* Resume logging */
 	if (ss && ss->unavailable && verbose < 1)
-		nvme_init_logging(r,
+		nvme_init_logging(ctx,
 				  saved_log_level,
 				  saved_log_pid,
 				  saved_log_tstamp);
@@ -179,7 +181,7 @@ static int do_connect(nvme_root_t r,
 }
 
 static int do_discover(struct nbft_info_discovery *dd,
-		       nvme_root_t r,
+		       struct nvme_global_ctx *ctx,
 		       nvme_host_t h,
 		       nvme_ctrl_t c,
 		       struct nvme_fabrics_config *defcfg,
@@ -188,8 +190,8 @@ static int do_discover(struct nbft_info_discovery *dd,
 		       unsigned int verbose)
 {
 	struct nvmf_discovery_log *log = NULL;
-	int i;
 	int ret;
+	int i;
 
 	struct nvme_get_discovery_args args = {
 		.c = c,
@@ -200,12 +202,12 @@ static int do_discover(struct nbft_info_discovery *dd,
 		.lsp = 0,
 	};
 
-	log = nvmf_get_discovery_wargs(&args);
-	if (!log) {
+	ret = nvmf_get_discovery_wargs(&args, &log);
+	if (ret) {
 		fprintf(stderr,
 			"Discovery Descriptor %d: failed to get discovery log: %s\n",
 			dd->index, nvme_strerror(errno));
-		return -errno;
+		return ret;
 	}
 
 	for (i = 0; i < le64_to_cpu(log->numrec); i++) {
@@ -238,13 +240,15 @@ static int do_discover(struct nbft_info_discovery *dd,
 		if (e->subtype == NVME_NQN_DISC) {
 			nvme_ctrl_t child;
 
-			child = nvmf_connect_disc_entry(h, e, defcfg, NULL);
-			do_discover(dd, r, h, child, defcfg, &trcfg,
+			ret = nvmf_connect_disc_entry(h, e, defcfg, NULL, &child);
+			if (ret)
+				return ret;
+			do_discover(dd, ctx, h, child, defcfg, &trcfg,
 				    flags, verbose);
 			nvme_disconnect_ctrl(child);
 			nvme_free_ctrl(child);
 		} else {
-			ret = do_connect(r, h, e, NULL, &trcfg,
+			ret = do_connect(ctx, h, e, NULL, &trcfg,
 					 defcfg, flags, verbose);
 
 			/*
@@ -258,7 +262,7 @@ static int do_discover(struct nbft_info_discovery *dd,
 				const char *htradr = trcfg.host_traddr;
 
 				trcfg.host_traddr = NULL;
-				ret = do_connect(r, h, e, NULL, &trcfg,
+				ret = do_connect(ctx, h, e, NULL, &trcfg,
 						 defcfg, flags, verbose);
 
 				if (ret == 0 && verbose >= 1)
@@ -283,8 +287,8 @@ static int do_discover(struct nbft_info_discovery *dd,
 }
 
 /* returns negative errno values */
-int discover_from_nbft(nvme_root_t r, char *hostnqn_arg, char *hostid_arg,
-		       char *hostnqn_sys, char *hostid_sys,
+int discover_from_nbft(struct nvme_global_ctx *ctx, char *hostnqn_arg,
+		       char *hostid_arg, char *hostnqn_sys, char *hostid_sys,
 		       const char *desc, bool connect,
 		       struct nvme_fabrics_config *cfg, char *nbft_path,
 		       nvme_print_flags_t flags, unsigned int verbose)
@@ -329,7 +333,7 @@ int discover_from_nbft(nvme_root_t r, char *hostnqn_arg, char *hostid_arg,
 				hostid = hostid_sys;
 		}
 
-		h = nvme_lookup_host(r, hostnqn, hostid);
+		h = nvme_lookup_host(ctx, hostnqn, hostid);
 		if (!h) {
 			ret = -ENOENT;
 			goto out_free;
@@ -363,7 +367,7 @@ int discover_from_nbft(nvme_root_t r, char *hostnqn_arg, char *hostid_arg,
 					.trsvcid	= (*ss)->trsvcid,
 				};
 
-				rr = do_connect(r, h, NULL, *ss, &trcfg,
+				rr = do_connect(ctx, h, NULL, *ss, &trcfg,
 						cfg, flags, verbose);
 
 				/*
@@ -376,7 +380,7 @@ int discover_from_nbft(nvme_root_t r, char *hostnqn_arg, char *hostid_arg,
 				    strlen(hfi->tcp_info.dhcp_server_ipaddr) > 0) {
 					trcfg.host_traddr = NULL;
 
-					rr = do_connect(r, h, NULL, *ss, &trcfg,
+					rr = do_connect(ctx, h, NULL, *ss, &trcfg,
 							cfg, flags, verbose);
 
 					if (rr == 0 && verbose >= 1)
@@ -421,7 +425,9 @@ int discover_from_nbft(nvme_root_t r, char *hostnqn_arg, char *hostid_arg,
 				continue;
 
 			hfi = (*dd)->hfi;
-			uri = nvme_parse_uri((*dd)->uri);
+			ret = nvme_parse_uri((*dd)->uri, &uri);
+			if (ret)
+				continue;
 			if (!validate_uri(*dd, uri))
 				continue;
 
@@ -452,12 +458,12 @@ int discover_from_nbft(nvme_root_t r, char *hostnqn_arg, char *hostid_arg,
 				persistent = true;
 
 			if (!c) {
-				c = nvmf_create_discover_ctrl(r, h, cfg, &trcfg);
+				c = nvmf_create_discover_ctrl(ctx, h, cfg, &trcfg);
 				if (!c && errno == ENVME_CONNECT_ADDRNOTAVAIL &&
 				    !strcmp(trcfg.transport, "tcp") &&
 				    strlen(hfi->tcp_info.dhcp_server_ipaddr) > 0) {
 					trcfg.host_traddr = NULL;
-					c = nvmf_create_discover_ctrl(r, h, cfg, &trcfg);
+					c = nvmf_create_discover_ctrl(ctx, h, cfg, &trcfg);
 				}
 			}
 
@@ -473,7 +479,7 @@ int discover_from_nbft(nvme_root_t r, char *hostnqn_arg, char *hostid_arg,
 				continue;
 			}
 
-			rr = do_discover(*dd, r, h, c, cfg, &trcfg,
+			rr = do_discover(*dd, ctx, h, c, cfg, &trcfg,
 					 flags, verbose);
 			if (!persistent)
 				nvme_disconnect_ctrl(c);

@@ -211,24 +211,24 @@ struct SNDK_UtilsTimeInfo {
 	int zone; /* Zone value like +530 or -300 */
 };
 
-int sndk_get_pci_ids(nvme_root_t r,
-		struct nvme_dev *dev,
+int sndk_get_pci_ids(struct nvme_global_ctx *ctx,
+		struct nvme_transport_handle *hdl,
 		uint32_t *device_id,
 		uint32_t *vendor_id);
 
-int sndk_get_vendor_id(struct nvme_dev *dev,
+int sndk_get_vendor_id(struct nvme_transport_handle *hdl,
 		uint32_t *vendor_id);
 
-bool sndk_check_device(nvme_root_t r,
-		struct nvme_dev *dev);
+bool sndk_check_device(struct nvme_global_ctx *ctx,
+		struct nvme_transport_handle *hdl);
 
-__u64 sndk_get_drive_capabilities(nvme_root_t r,
-		struct nvme_dev *dev);
+__u64 sndk_get_drive_capabilities(struct nvme_global_ctx *ctx,
+		struct nvme_transport_handle *hdl);
 
-__u64 sndk_get_enc_drive_capabilities(nvme_root_t r,
-	    struct nvme_dev *dev);
+__u64 sndk_get_enc_drive_capabilities(struct nvme_global_ctx *ctx,
+		struct nvme_transport_handle *hdl);
 
-int sndk_get_serial_name(struct nvme_dev *dev, char *file, size_t len,
+int sndk_get_serial_name(struct nvme_transport_handle *hdl, char *file, size_t len,
 			 const char *suffix);
 
 void sndk_UtilsGetTime(struct SNDK_UtilsTimeInfo *timeInfo);
@@ -236,4 +236,4 @@ void sndk_UtilsGetTime(struct SNDK_UtilsTimeInfo *timeInfo);
 int sndk_UtilsSnprintf(char *buffer, unsigned int sizeOfBuffer,
 		       const char *format, ...);
 
-int sndk_check_ctrl_telemetry_option_disabled(struct nvme_dev *dev);
+int sndk_check_ctrl_telemetry_option_disabled(struct nvme_transport_handle *hdl);

@@ -17,26 +17,27 @@
 #include "sandisk-utils.h"
 #include "plugins/wdc/wdc-nvme-cmds.h"
 
-
-int sndk_get_pci_ids(nvme_root_t r, struct nvme_dev *dev,
-			   uint32_t *device_id, uint32_t *vendor_id)
+int sndk_get_pci_ids(struct nvme_global_ctx *ctx,
+		     struct nvme_transport_handle *hdl, uint32_t *device_id,
+		     uint32_t *vendor_id)
 {
 	char vid[256], did[256], id[32];
 	nvme_ctrl_t c = NULL;
 	nvme_ns_t n = NULL;
 	int fd, ret;
 
-	c = nvme_scan_ctrl(r, dev->name);
-	if (c) {
+	ret = nvme_scan_ctrl(ctx, nvme_transport_handle_get_name(hdl), &c);
+	if (!ret) {
 		snprintf(vid, sizeof(vid), "%s/device/vendor",
 			nvme_ctrl_get_sysfs_dir(c));
 		snprintf(did, sizeof(did), "%s/device/device",
 			nvme_ctrl_get_sysfs_dir(c));
 		nvme_free_ctrl(c);
 	} else {
-		n = nvme_scan_namespace(dev->name);
-		if (!n) {
-			fprintf(stderr, "Unable to find %s\n", dev->name);
+		ret = nvme_scan_namespace(nvme_transport_handle_get_name(hdl), &n);
+		if (ret) {
+			fprintf(stderr, "Unable to find %s\n",
+				nvme_transport_handle_get_name(hdl));
 			return -1;
 		}
 
@@ -88,13 +89,13 @@ int sndk_get_pci_ids(nvme_root_t r, struct nvme_dev *dev,
 	return 0;
 }
 
-int sndk_get_vendor_id(struct nvme_dev *dev, uint32_t *vendor_id)
+int sndk_get_vendor_id(struct nvme_transport_handle *hdl, uint32_t *vendor_id)
 {
-	int ret;
 	struct nvme_id_ctrl ctrl;
+	int ret;
 
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
-	ret = nvme_identify_ctrl(dev_fd(dev), &ctrl);
+	ret = nvme_identify_ctrl(hdl, &ctrl);
 	if (ret) {
 		fprintf(stderr, "ERROR: SNDK: nvme_identify_ctrl() failed 0x%x\n", ret);
 		return -1;
@@ -105,16 +106,17 @@ int sndk_get_vendor_id(struct nvme_dev *dev, uint32_t *vendor_id)
 	return ret;
 }
 
-bool sndk_check_device(nvme_root_t r, struct nvme_dev *dev)
+bool sndk_check_device(struct nvme_global_ctx *ctx,
+		       struct nvme_transport_handle *hdl)
 {
-	int ret;
-	bool supported;
 	uint32_t read_device_id = -1, read_vendor_id = -1;
+	bool supported;
+	int ret;
 
-	ret = sndk_get_pci_ids(r, dev, &read_device_id, &read_vendor_id);
+	ret = sndk_get_pci_ids(ctx, hdl, &read_device_id, &read_vendor_id);
 	if (ret < 0) {
 		/* Use the identify nvme command to get vendor id due to NVMeOF device. */
-		if (sndk_get_vendor_id(dev, &read_vendor_id) < 0)
+		if (sndk_get_vendor_id(hdl, &read_vendor_id) < 0)
 			return false;
 	}
 
@@ -131,16 +133,16 @@ bool sndk_check_device(nvme_root_t r, struct nvme_dev *dev)
 	return supported;
 }
 
-__u64 sndk_get_drive_capabilities(nvme_root_t r, struct nvme_dev *dev)
+__u64 sndk_get_drive_capabilities(struct nvme_global_ctx *ctx,
+				  struct nvme_transport_handle *hdl)
 {
-	__u64 capabilities = 0;
-
-	int ret;
 	uint32_t read_device_id = -1, read_vendor_id = -1;
+	__u64 capabilities = 0;
+	int ret;
 
-	ret = sndk_get_pci_ids(r, dev, &read_device_id, &read_vendor_id);
+	ret = sndk_get_pci_ids(ctx, hdl, &read_device_id, &read_vendor_id);
 	if (ret < 0) {
-		if (sndk_get_vendor_id(dev, &read_vendor_id) < 0)
+		if (sndk_get_vendor_id(hdl, &read_vendor_id) < 0)
 			return capabilities;
 	}
 
@@ -150,7 +152,7 @@ __u64 sndk_get_drive_capabilities(nvme_root_t r, struct nvme_dev *dev)
 	 * so we can only use the vendor_id
 	 */
 	if (read_device_id == -1 && read_vendor_id != -1) {
-		capabilities = sndk_get_enc_drive_capabilities(r, dev);
+		capabilities = sndk_get_enc_drive_capabilities(ctx, hdl);
 		return capabilities;
 	}
 
@@ -197,20 +199,20 @@ __u64 sndk_get_drive_capabilities(nvme_root_t r, struct nvme_dev *dev)
 
 	/* Check for fallback WDC plugin support */
 	if (!capabilities)
-		capabilities = run_wdc_get_drive_capabilities(r, dev);
+		capabilities = run_wdc_get_drive_capabilities(ctx, hdl);
 
 	return capabilities;
 }
 
-__u64 sndk_get_enc_drive_capabilities(nvme_root_t r,
-					    struct nvme_dev *dev)
+__u64 sndk_get_enc_drive_capabilities(struct nvme_global_ctx *ctx,
+				      struct nvme_transport_handle *hdl)
 {
 	int ret;
 	uint32_t read_vendor_id;
 	__u64 capabilities = 0;
 	__u32 cust_id;
 
-	ret = sndk_get_vendor_id(dev, &read_vendor_id);
+	ret = sndk_get_vendor_id(hdl, &read_vendor_id);
 	if (ret < 0)
 		return capabilities;
 
@@ -222,26 +224,26 @@ __u64 sndk_get_enc_drive_capabilities(nvme_root_t r,
 			SNDK_DRIVE_CAP_RESIZE);
 
 		/* verify the 0xC3 log page is supported */
-		if (run_wdc_nvme_check_supported_log_page(r, dev,
+		if (run_wdc_nvme_check_supported_log_page(ctx, hdl,
 			SNDK_LATENCY_MON_LOG_ID))
 			capabilities |= SNDK_DRIVE_CAP_C3_LOG_PAGE;
 
 		/* verify the 0xCB log page is supported */
-		if (run_wdc_nvme_check_supported_log_page(r, dev,
+		if (run_wdc_nvme_check_supported_log_page(ctx, hdl,
 			SNDK_NVME_GET_FW_ACT_HISTORY_LOG_ID))
 			capabilities |= SNDK_DRIVE_CAP_FW_ACTIVATE_HISTORY;
 
 		/* verify the 0xCA log page is supported */
-		if (run_wdc_nvme_check_supported_log_page(r, dev,
+		if (run_wdc_nvme_check_supported_log_page(ctx, hdl,
 			SNDK_NVME_GET_DEVICE_INFO_LOG_ID))
 			capabilities |= SNDK_DRIVE_CAP_CA_LOG_PAGE;
 
 		/* verify the 0xD0 log page is supported */
-		if (run_wdc_nvme_check_supported_log_page(r, dev,
+		if (run_wdc_nvme_check_supported_log_page(ctx, hdl,
 			SNDK_NVME_GET_VU_SMART_LOG_ID))
 			capabilities |= SNDK_DRIVE_CAP_D0_LOG_PAGE;
 
-		cust_id = run_wdc_get_fw_cust_id(r, dev);
+		cust_id = run_wdc_get_fw_cust_id(ctx, hdl);
 		if (cust_id == SNDK_INVALID_CUSTOMER_ID) {
 			fprintf(stderr, "%s: ERROR: SNDK: invalid customer id\n", __func__);
 			return -1;
@@ -265,8 +267,8 @@ __u64 sndk_get_enc_drive_capabilities(nvme_root_t r,
 	return capabilities;
 }
 
-int sndk_get_serial_name(struct nvme_dev *dev, char *file, size_t len,
-				const char *suffix)
+int sndk_get_serial_name(struct nvme_transport_handle *hdl, char *file,
+			 size_t len, const char *suffix)
 {
 	int i;
 	int ret;
@@ -279,7 +281,7 @@ int sndk_get_serial_name(struct nvme_dev *dev, char *file, size_t len,
 	strncpy(orig, file, PATH_MAX - 1);
 	memset(file, 0, len);
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
-	ret = nvme_identify_ctrl(dev_fd(dev), &ctrl);
+	ret = nvme_identify_ctrl(hdl, &ctrl);
 	if (ret) {
 		fprintf(stderr, "ERROR: SNDK: nvme_identify_ctrl() failed 0x%x\n", ret);
 		return -1;
@@ -327,7 +329,8 @@ void sndk_UtilsGetTime(struct SNDK_UtilsTimeInfo *timeInfo)
 #endif /* HAVE_TM_GMTOFF */
 }
 
-int sndk_UtilsSnprintf(char *buffer, unsigned int sizeOfBuffer, const char *format, ...)
+int sndk_UtilsSnprintf(char *buffer, unsigned int sizeOfBuffer,
+		       const char *format, ...)
 {
 	int res = 0;
 	va_list vArgs;
@@ -340,12 +343,12 @@ int sndk_UtilsSnprintf(char *buffer, unsigned int sizeOfBuffer, const char *form
 }
 
 /* Verify the Controller Initiated Option is enabled */
-int sndk_check_ctrl_telemetry_option_disabled(struct nvme_dev *dev)
+int sndk_check_ctrl_telemetry_option_disabled(struct nvme_transport_handle *hdl)
 {
 	int err;
 	__u32 result;
 
-	err = nvme_get_features_data(dev_fd(dev),
+	err = nvme_get_features_data(hdl,
 		 SNDK_VU_DISABLE_CNTLR_TELEMETRY_OPTION_FEATURE_ID,
 		 0, 4, NULL, &result);
 	if (!err) {

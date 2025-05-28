@@ -4,4 +4,3 @@ revision = libnvme3
 
 [provide]
 libnvme = libnvme_dep
-libnvme-mi = libnvme_mi_dep

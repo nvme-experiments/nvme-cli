@@ -376,10 +376,10 @@ void nvme_show_supported_cap_config_log(
 	nvme_print(supported_cap_config_list_log, flags, cap);
 }
 
-void nvme_show_subsystem_list(nvme_root_t r, bool show_ana,
+void nvme_show_subsystem_list(struct nvme_global_ctx *ctx, bool show_ana,
 			      nvme_print_flags_t flags)
 {
-	nvme_print(print_nvme_subsystem_list, flags, r, show_ana);
+	nvme_print(print_nvme_subsystem_list, flags, ctx, show_ana);
 }
 
 const char *nvme_register_szu_to_string(__u8 szu)
@@ -491,9 +491,10 @@ void nvme_show_single_property(int offset, uint64_t value64, nvme_print_flags_t 
 	nvme_print(single_property, flags, offset, value64);
 }
 
-void nvme_show_relatives(nvme_root_t r, const char *name, nvme_print_flags_t flags)
+void nvme_show_relatives(struct nvme_global_ctx *ctx, const char *name,
+			 nvme_print_flags_t flags)
 {
-	nvme_print(relatives, flags, r, name);
+	nvme_print(relatives, flags, ctx, name);
 }
 
 void d(unsigned char *buf, int len, int width, int group)
@@ -1540,19 +1541,19 @@ void nvme_show_list_item(nvme_ns_t n)
 	nvme_print(list_item, NORMAL, n);
 }
 
-void nvme_show_list_items(nvme_root_t r, nvme_print_flags_t flags)
+void nvme_show_list_items(struct nvme_global_ctx *ctx, nvme_print_flags_t flags)
 {
-	nvme_print(list_items, flags, r);
+	nvme_print(list_items, flags, ctx);
 }
 
-void nvme_show_topology(nvme_root_t r,
+void nvme_show_topology(struct nvme_global_ctx *ctx,
 			enum nvme_cli_topo_ranking ranking,
 			nvme_print_flags_t flags)
 {
 	if (ranking == NVME_CLI_TOPO_NAMESPACE)
-		nvme_print(topology_namespace, flags, r);
+		nvme_print(topology_namespace, flags, ctx);
 	else
-		nvme_print(topology_ctrl, flags, r);
+		nvme_print(topology_ctrl, flags, ctx);
 }
 
 void nvme_show_message(bool error, const char *msg, ...)
