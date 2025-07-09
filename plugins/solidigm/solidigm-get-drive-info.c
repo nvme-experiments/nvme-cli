@@ -40,9 +40,10 @@ int sldgm_get_drive_info(int argc, char **argv, struct command *cmd, struct plug
 		return err;
 	}
 
-	err = nvme_scan(NULL, &ctx);
+	err = nvme_scan_topology(ctx, NULL, NULL);
 	if (err)
 		return err;
+
 	err = nvme_scan_ctrl(ctx, nvme_transport_handle_get_name(hdl), &c);
 	if (err)
 		n = nvme_ctrl_first_ns(c);

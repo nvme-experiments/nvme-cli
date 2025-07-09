@@ -89,21 +89,26 @@ static int print_zns_list(struct nvme_global_ctx *ctx)
 static int list(int argc, char **argv, struct command *cmd, struct plugin *plugin)
 {
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
-	int err = 0;
+	int err;
+
+	ctx = nvme_create_global_ctx(stdout, DEFAULT_LOGLEVEL);
+	if (ctx) {
+		fprintf(stderr, "Failed to create root object\n");
+		return -ENOMEM;
+	}
+
+	err = nvme_scan_topology(ctx, NULL, NULL);
+	if (err) {
+		fprintf(stderr, "Failed to scan nvme subsystems\n");
+		return err;
+	}
 
 	printf("%-21s %-20s %-40s %-9s %-26s %-16s %-8s\n", "Node", "SN",
 	       "Model", "Namespace", "Usage", "Format", "FW Rev");
 	printf("%-.21s %-.20s %-.40s %-.9s %-.26s %-.16s %-.8s\n", dash, dash,
 	       dash, dash, dash, dash, dash);
 
-	err = nvme_scan(NULL, &ctx);
-	if (!err) {
-		err = print_zns_list(ctx);
-	} else {
-		fprintf(stderr, "Failed to scan nvme subsystems\n");
-	}
-
-	return err;
+	return print_zns_list(ctx);
 }
 
 static int id_ctrl(int argc, char **argv, struct command *cmd, struct plugin *plugin)

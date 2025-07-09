@@ -28,7 +28,8 @@
 #include "sandisk-utils.h"
 #include "plugins/wdc/wdc-nvme-cmds.h"
 
-static int sndk_do_cap_telemetry_log(struct nvme_transport_handle *hdl,
+static int sndk_do_cap_telemetry_log(struct nvme_global_ctx *ctx,
+				     struct nvme_transport_handle *hdl,
 				     const char *file, __u32 bs, int type,
 				     int data_area)
 {
@@ -41,13 +42,10 @@ static int sndk_do_cap_telemetry_log(struct nvme_transport_handle *hdl,
 	int data_written = 0, data_remaining = 0;
 	struct nvme_id_ctrl ctrl;
 	__u64 capabilities = 0;
-	struct nvme_global_ctx *ctx;
 	bool host_behavior_changed = false;
 	struct nvme_feat_host_behavior prev = {0};
 	__u32 result;
 	int ret;
-
-
 
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
 	err = nvme_identify_ctrl(hdl, &ctrl);
@@ -61,9 +59,9 @@ static int sndk_do_cap_telemetry_log(struct nvme_transport_handle *hdl,
 		return -EINVAL;
 	}
 
-	ret = nvme_scan(NULL, &ctx);
+	ret = nvme_scan_topology(ctx, NULL, NULL);
 	if (ret)
-		return ret;
+		return  ret;
 	capabilities = sndk_get_drive_capabilities(ctx, hdl);
 
 	if (type == SNDK_TELEMETRY_TYPE_HOST) {
@@ -340,7 +338,7 @@ static int sndk_vs_internal_fw_log(int argc, char **argv,
 	if (ret)
 		return ret;
 
-	ret = nvme_scan(NULL, &ctx);
+	ret = nvme_scan_topology(ctx, NULL, NULL);
 	if (ret || !sndk_check_device(ctx, hdl))
 		goto out;
 
@@ -424,7 +422,7 @@ static int sndk_vs_internal_fw_log(int argc, char **argv,
 		if (!telemetry_data_area)
 			telemetry_data_area = 3;
 
-		ret = sndk_do_cap_telemetry_log(hdl, f, xfer_size,
+		ret = sndk_do_cap_telemetry_log(ctx, hdl, f, xfer_size,
 				telemetry_type, telemetry_data_area);
 		goto out;
 	}
@@ -436,7 +434,7 @@ static int sndk_vs_internal_fw_log(int argc, char **argv,
 			if (!telemetry_data_area)
 				telemetry_data_area = 3;
 
-			ret = sndk_do_cap_telemetry_log(hdl, f, xfer_size,
+			ret = sndk_do_cap_telemetry_log(ctx, hdl, f, xfer_size,
 					telemetry_type, telemetry_data_area);
 			goto out;
 		} else {
@@ -564,11 +562,10 @@ static int sndk_capabilities(int argc, char **argv,
 		return ret;
 
 	/* get capabilities */
-	ret = nvme_scan(NULL, &ctx);
-	if (ret)
-		return ret;
+	ret = nvme_scan_topology(ctx, NULL, NULL);
+	if (ret || sndk_check_device(ctx, hdl))
+		return -1;
 
-	sndk_check_device(ctx, hdl);
 	capabilities = sndk_get_drive_capabilities(ctx, hdl);
 
 	/* print command and supported status */
