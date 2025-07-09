@@ -90,22 +90,26 @@ static int list(int argc, char **argv, struct command *cmd,
 		struct plugin *plugin)
 {
 	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	int err = 0;
+	int err;
+
+	r = nvme_create_root(stderr, DEFAULT_LOGLEVEL);
+	if (r) {
+		fprintf(stderr, "Failed to create root object\n");
+		return -errno;
+	}
+
+	err = nvme_scan_topology(r, NULL, NULL);
+	if (err) {
+		fprintf(stderr, "Failed to scan nvme subsystems\n");
+		return err;
+	}
 
 	printf("%-21s %-20s %-40s %-9s %-26s %-16s %-8s\n", "Node", "SN",
 	       "Model", "Namespace", "Usage", "Format", "FW Rev");
 	printf("%-.21s %-.20s %-.40s %-.9s %-.26s %-.16s %-.8s\n", dash, dash,
 	       dash, dash, dash, dash, dash);
 
-	r = nvme_scan(NULL);
-	if (r) {
-		err = print_zns_list(r);
-	} else {
-		fprintf(stderr, "Failed to scan nvme subsystems\n");
-		err = -errno;
-	}
-
-	return err;
+	return print_zns_list(r);
 }
 
 static int id_ctrl(int argc, char **argv, struct command *cmd, struct plugin *plugin)

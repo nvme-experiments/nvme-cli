@@ -40,7 +40,7 @@ int sldgm_get_drive_info(int argc, char **argv, struct command *cmd, struct plug
 		return err;
 	}
 
-	r = nvme_scan(NULL);
+	nvme_scan_topology(r, NULL, NULL);
 	c = nvme_scan_ctrl(r, nvme_link_get_name(l));
 	n = c ? nvme_ctrl_first_ns(c) : nvme_scan_namespace(nvme_link_get_name(l));
 	if (!n) {

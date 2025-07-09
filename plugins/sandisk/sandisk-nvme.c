@@ -28,7 +28,7 @@
 #include "sandisk-utils.h"
 #include "plugins/wdc/wdc-nvme-cmds.h"
 
-static int sndk_do_cap_telemetry_log(nvme_link_t l, const char *file,
+static int sndk_do_cap_telemetry_log(nvme_root_t r, nvme_link_t l, const char *file,
 				     __u32 bs, int type, int data_area)
 {
 	struct nvme_telemetry_log *log;
@@ -40,7 +40,6 @@ static int sndk_do_cap_telemetry_log(nvme_link_t l, const char *file,
 	int data_written = 0, data_remaining = 0;
 	struct nvme_id_ctrl ctrl;
 	__u64 capabilities = 0;
-	nvme_root_t r;
 	bool host_behavior_changed = false;
 	struct nvme_feat_host_behavior prev = {0};
 	__u32 result;
@@ -59,7 +58,7 @@ static int sndk_do_cap_telemetry_log(nvme_link_t l, const char *file,
 		return -EINVAL;
 	}
 
-	r = nvme_scan(NULL);
+	nvme_scan_topology(r, NULL, NULL);
 	capabilities = sndk_get_drive_capabilities(r, l);
 
 	if (type == SNDK_TELEMETRY_TYPE_HOST) {
@@ -335,7 +334,7 @@ static int sndk_vs_internal_fw_log(int argc, char **argv,
 	if (ret)
 		return ret;
 
-	r = nvme_scan(NULL);
+	nvme_scan_topology(r, NULL, NULL);
 	if (!sndk_check_device(r, l))
 		goto out;
 
@@ -419,7 +418,7 @@ static int sndk_vs_internal_fw_log(int argc, char **argv,
 		if (!telemetry_data_area)
 			telemetry_data_area = 3;
 
-		ret = sndk_do_cap_telemetry_log(l, f, xfer_size,
+		ret = sndk_do_cap_telemetry_log(r, l, f, xfer_size,
 				telemetry_type, telemetry_data_area);
 		goto out;
 	}
@@ -431,7 +430,7 @@ static int sndk_vs_internal_fw_log(int argc, char **argv,
 			if (!telemetry_data_area)
 				telemetry_data_area = 3;
 
-			ret = sndk_do_cap_telemetry_log(l, f, xfer_size,
+			ret = sndk_do_cap_telemetry_log(r, l, f, xfer_size,
 					telemetry_type, telemetry_data_area);
 			goto out;
 		} else {
@@ -559,7 +558,7 @@ static int sndk_capabilities(int argc, char **argv,
 		return ret;
 
 	/* get capabilities */
-	r = nvme_scan(NULL);
+	nvme_scan_topology(r, NULL, NULL);
 	sndk_check_device(r, l);
 	capabilities = sndk_get_drive_capabilities(r, l);
 
