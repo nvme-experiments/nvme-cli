@@ -38,7 +38,7 @@ int sndk_get_pci_ids(struct nvme_global_ctx *ctx,
 		if (ret) {
 			fprintf(stderr, "Unable to find %s\n",
 				nvme_transport_handle_get_name(hdl));
-			return -1;
+			return ret;
 		}
 
 		snprintf(vid, sizeof(vid), "%s/device/device/vendor",

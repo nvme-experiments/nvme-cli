@@ -1450,12 +1450,13 @@ static double calc_percent(uint64_t numerator, uint64_t denominator)
 static int wdc_get_pci_ids(struct nvme_global_ctx *ctx, struct nvme_transport_handle *hdl,
 			   uint32_t *device_id, uint32_t *vendor_id)
 {
+	const char *name = nvme_transport_handle_get_name(hdl);
 	char vid[256], did[256], id[32];
 	nvme_ctrl_t c = NULL;
 	nvme_ns_t n = NULL;
 	int fd, ret;
 
-	ret = nvme_scan_ctrl(ctx, nvme_transport_handle_get_name(hdl), &c);
+	ret = nvme_scan_ctrl(ctx, name, &c);
 	if (!ret) {
 		snprintf(vid, sizeof(vid), "%s/device/vendor",
 			nvme_ctrl_get_sysfs_dir(c));
@@ -1463,10 +1464,10 @@ static int wdc_get_pci_ids(struct nvme_global_ctx *ctx, struct nvme_transport_ha
 			nvme_ctrl_get_sysfs_dir(c));
 		nvme_free_ctrl(c);
 	} else {
-		ret = nvme_scan_namespace(nvme_transport_handle_get_name(hdl), &n);
+		ret = nvme_scan_namespace(name, &n);
 		if (ret) {
-			fprintf(stderr, "Unable to find %s\n", nvme_transport_handle_get_name(hdl));
-			return -1;
+			fprintf(stderr, "Unable to find %s\n", name);
+			return ret;
 		}
 
 		snprintf(vid, sizeof(vid), "%s/device/device/vendor",
