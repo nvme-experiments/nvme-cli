@@ -6,7 +6,6 @@
  *           Brandon Paupore <brandon.paupore@sandisk.com>
  */
 
-#include <errno.h>
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
@@ -26,18 +25,18 @@ int sndk_get_pci_ids(nvme_root_t r, nvme_link_t l,
 	nvme_ns_t n = NULL;
 	int fd, ret;
 
-	c = nvme_scan_ctrl(r, nvme_link_get_name(l));
-	if (c) {
+	ret = nvme_scan_ctrl(r, nvme_link_get_name(l), &c);
+	if (!ret) {
 		snprintf(vid, sizeof(vid), "%s/device/vendor",
 			nvme_ctrl_get_sysfs_dir(c));
 		snprintf(did, sizeof(did), "%s/device/device",
 			nvme_ctrl_get_sysfs_dir(c));
 		nvme_free_ctrl(c);
 	} else {
-		n = nvme_scan_namespace(nvme_link_get_name(l));
-		if (!n) {
+		ret = nvme_scan_namespace(nvme_link_get_name(l), &n);
+		if (ret) {
 			fprintf(stderr, "Unable to find %s\n", nvme_link_get_name(l));
-			return -1;
+			return ret;
 		}
 
 		snprintf(vid, sizeof(vid), "%s/device/device/vendor",

@@ -959,10 +959,10 @@ static int netapp_smdevices(int argc, char **argv, struct command *command,
 	for (i = 0; i < num; i++) {
 		snprintf(path, sizeof(path), "%s%s", dev_path,
 			devices[i]->d_name);
-		l = nvme_open(r, path);
-		if (!l) {
+		ret = nvme_open(r, path, &l);
+		if (ret) {
 			fprintf(stderr, "Unable to open %s: %s\n", path,
-				strerror(errno));
+				strerror(-ret));
 			continue;
 		}
 
@@ -1070,10 +1070,10 @@ static int netapp_ontapdevices(int argc, char **argv, struct command *command,
 	for (i = 0; i < num; i++) {
 		snprintf(path, sizeof(path), "%s%s", dev_path,
 				devices[i]->d_name);
-		l = nvme_open(r, path);
-		if (!l) {
+		ret = nvme_open(r, path, &l);
+		if (ret) {
 			fprintf(stderr, "Unable to open %s: %s\n", path,
-					strerror(errno));
+					strerror(-ret));
 			continue;
 		}
 

@@ -6,7 +6,6 @@
  */
 
 #include <dlfcn.h>
-#include <errno.h>
 #include <stdlib.h>
 
 #include <libnvme.h>
