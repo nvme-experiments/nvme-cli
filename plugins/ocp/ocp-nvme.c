@@ -883,22 +883,22 @@ static int extract_dump_get_log(nvme_link_t l, char *featurename, char *filename
 		memset(data, 0, transfersize);
 
 		struct nvme_get_log_args args = {
-			.lpo = offset,
-			.result = NULL,
-			.log = (void *)data,
-			.args_size = sizeof(args),
-			.lid = log_id,
-			.len = transfersize,
 			.nsid = nsid,
-			.lsp = lsp,
-			.uuidx = 0,
 			.rae = rae,
-			.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
+			.lsp = lsp,
+			.lid = log_id,
 			.csi = NVME_CSI_NVM,
 			.ot = false,
+			.uidx = 0,
+			.lpo = offset,
+			.log = (void *)data,
+			.len = transfersize,
+			.result = NULL,
 		};
 
-		err = nvme_get_log(l, &args);
+		err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+						   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+						   args.result);
 		if (err) {
 			if (i > 0)
 				goto close_output;
@@ -1267,23 +1267,23 @@ static int get_telemetry_log_page_data(nvme_link_t l, int tele_type)
 	}
 
 	struct nvme_get_log_args args = {
-		.lpo = 0,
-		.result = NULL,
-		.log = hdr,
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = log_id,
-		.len = bs,
 		.nsid = NVME_NSID_ALL,
-		.csi = NVME_CSI_NVM,
-		.lsi = NVME_LOG_LSI_NONE,
-		.lsp = NVME_LOG_TELEM_HOST_LSP_CREATE,
-		.uuidx = NVME_UUID_NONE,
 		.rae = true,
+		.lsp = NVME_LOG_TELEM_HOST_LSP_CREATE,
+		.lid = log_id,
+		.lsi = NVME_LOG_LSI_NONE,
+		.csi = NVME_CSI_NVM,
 		.ot = false,
+		.uidx = NVME_UUID_NONE,
+		.lpo = 0,
+		.log = hdr,
+		.len = bs,
+		.result = NULL,
 	};
 
-	err = nvme_get_log(l, &args);
+	err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 	if (err < 0)
 		nvme_show_error("Failed to fetch the log from drive.\n");
 	else if (err > 0) {
@@ -1304,7 +1304,9 @@ static int get_telemetry_log_page_data(nvme_link_t l, int tele_type)
 		args.log = telemetry_log;
 		args.lpo = offset;
 		args.lsp = NVME_LOG_LSP_NONE;
-		err = nvme_get_log(l, &args);
+		err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+						   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+						   args.result);
 		if (err < 0) {
 			nvme_show_error("Failed to fetch the log from drive.\n");
 			break;

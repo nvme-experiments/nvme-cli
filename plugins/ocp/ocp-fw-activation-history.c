@@ -54,23 +54,23 @@ int ocp_fw_activation_history_log(int argc, char **argv, struct command *cmd,
 	struct fw_activation_history fw_history = { 0 };
 
 	struct nvme_get_log_args args = {
-		.lpo = 0,
-		.result = NULL,
-		.log = &fw_history,
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = (enum nvme_cmd_get_log_lid)OCP_LID_FAHL_OBSOLETE,
-		.len = sizeof(fw_history),
 		.nsid = NVME_NSID_ALL,
-		.csi = NVME_CSI_NVM,
-		.lsi = NVME_LOG_LSI_NONE,
-		.lsp = 0,
-		.uuidx = uuid_index,
 		.rae = false,
+		.lsp = 0,
+		.lid = (enum nvme_cmd_get_log_lid)OCP_LID_FAHL_OBSOLETE,
+		.lsi = NVME_LOG_LSI_NONE,
+		.csi = NVME_CSI_NVM,
 		.ot = false,
+		.uidx = uuid_index,
+		.lpo = 0,
+		.log = &fw_history,
+		.len = sizeof(fw_history),
+		.result = NULL,
 	};
 
-	err = nvme_get_log(l, &args);
+	err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 
 	if (err)
 		nvme_show_status(err);

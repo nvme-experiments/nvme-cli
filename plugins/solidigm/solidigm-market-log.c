@@ -48,23 +48,23 @@ int sldgm_get_market_log(int argc, char **argv, struct command *command,
 	sldgm_get_uuid_index(l, &uuid_idx);
 
 	struct nvme_get_log_args args = {
-		.lpo	= 0,
-		.result = NULL,
-		.log	= log,
-		.args_size = sizeof(args),
-		.uuidx	= uuid_idx,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid	= MARKET_LOG_LID,
-		.len	= sizeof(log),
 		.nsid	= NVME_NSID_ALL,
-		.csi	= NVME_CSI_NVM,
-		.lsi	= NVME_LOG_LSI_NONE,
-		.lsp	= NVME_LOG_LSP_NONE,
 		.rae	= false,
+		.lsp	= NVME_LOG_LSP_NONE,
+		.lid	= MARKET_LOG_LID,
+		.lsi	= NVME_LOG_LSI_NONE,
+		.csi	= NVME_CSI_NVM,
 		.ot	= false,
+		.uidx	= uuid_idx,
+		.lpo	= 0,
+		.log	= log,
+		.len	= sizeof(log),
+		.result = NULL,
 	};
 
-	err = nvme_get_log(l, &args);
+	err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 	if (err) {
 		nvme_show_status(err);
 		return err;

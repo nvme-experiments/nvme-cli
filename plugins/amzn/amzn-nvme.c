@@ -231,23 +231,23 @@ static int get_stats(int argc, char **argv, struct command *cmd,
 		return rc;
 
 	struct nvme_get_log_args args = {
-		.args_size = sizeof(args),
-		.lid = AMZN_NVME_STATS_LOGPAGE_ID,
 		.nsid = 1,
-		.lpo = 0,
-		.lsp = NVME_LOG_LSP_NONE,
-		.lsi = 0,
 		.rae = false,
-		.uuidx = 0,
+		.lsp = NVME_LOG_LSP_NONE,
+		.lid = AMZN_NVME_STATS_LOGPAGE_ID,
+		.lsi = 0,
 		.csi = NVME_CSI_NVM,
 		.ot = false,
-		.len = sizeof(log),
+		.uidx = 0,
+		.lpo = 0,
 		.log = &log,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
+		.len = sizeof(log),
 		.result = NULL,
 	};
 
-	rc = nvme_get_log(l, &args);
+	rc = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi,
+					  args.ot, args.uidx, args.lpo, args.log, args.len,
+					  NVME_LOG_PAGE_PDU_SIZE, args.result);
 	if (rc != 0) {
 		fprintf(stderr, "[ERROR] %s: Failed to get log page, rc = %d",
 			__func__, rc);

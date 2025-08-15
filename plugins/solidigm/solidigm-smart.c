@@ -264,23 +264,23 @@ int solidigm_get_additional_smart_log(int argc, char **argv, struct command *cmd
 	sldgm_get_uuid_index(l, &uuid_index);
 
 	struct nvme_get_log_args args = {
-		.lpo = 0,
-		.result = NULL,
-		.log = &smart_log_payload,
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = solidigm_vu_smart_log_id,
-		.len = sizeof(smart_log_payload),
 		.nsid = NVME_NSID_ALL,
-		.csi = NVME_CSI_NVM,
-		.lsi = NVME_LOG_LSI_NONE,
-		.lsp = NVME_LOG_LSP_NONE,
-		.uuidx = uuid_index,
 		.rae = false,
+		.lsp = NVME_LOG_LSP_NONE,
+		.lid = solidigm_vu_smart_log_id,
+		.lsi = NVME_LOG_LSI_NONE,
+		.csi = NVME_CSI_NVM,
 		.ot = false,
+		.uidx = uuid_index,
+		.lpo = 0,
+		.log = &smart_log_payload,
+		.len = sizeof(smart_log_payload),
+		.result = NULL,
 	};
 
-	err =  nvme_get_log(l, &args);
+	err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 	if (!err) {
 		if (flags & JSON)
 			vu_smart_log_show_json(&smart_log_payload,

@@ -381,8 +381,8 @@ static int nvme_get_vendor_log(nvme_link_t l, __u32 namespace_id,
 	err = nvme_get_sct_status(l, MASK_0 | MASK_1);
 	if (err)
 		goto end;
-	err = nvme_get_nsid_log(l, false, log_page, namespace_id,
-				log_len, log);
+	err = nvme_get_nsid_log(l, namespace_id, false, log_page,
+				log, log_len);
 	if (err) {
 		fprintf(stderr, "%s: couldn't get log 0x%x\n", __func__,
 			log_page);

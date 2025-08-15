@@ -345,23 +345,23 @@ static int latency_tracker_get_log(struct latency_tracker *lt)
 		return 0;
 
 	struct nvme_get_log_args args = {
-		.lpo	= 0,
-		.result = NULL,
-		.log	= &lt->stats,
-		.args_size = sizeof(args),
-		.uuidx	= lt->uuid_index,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid	= lt->cfg.write ? WRITE_LOG_ID : READ_LOG_ID,
-		.len	= sizeof(lt->stats),
 		.nsid	= NVME_NSID_ALL,
-		.csi	= NVME_CSI_NVM,
-		.lsi	= NVME_LOG_LSI_NONE,
-		.lsp	= lt->cfg.type,
 		.rae	= false,
+		.lsp	= lt->cfg.type,
+		.lid	= lt->cfg.write ? WRITE_LOG_ID : READ_LOG_ID,
+		.lsi	= NVME_LOG_LSI_NONE,
+		.csi	= NVME_CSI_NVM,
 		.ot	= false,
+		.uidx	= lt->uuid_index,
+		.lpo	= 0,
+		.log	= &lt->stats,
+		.len	= sizeof(lt->stats),
+		.result = NULL,
 	};
 
-	err = nvme_get_log(lt->link, &args);
+	err = nvme_get_log(lt->link, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi,
+					   args.ot, args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 	if (err)
 		return err;
 

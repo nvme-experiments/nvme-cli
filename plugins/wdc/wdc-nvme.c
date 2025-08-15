@@ -2479,22 +2479,22 @@ static bool get_dev_mgmt_log_page_data(nvme_link_t l, void **log_data,
 
 	/* get the log page length */
 	struct nvme_get_log_args args_len = {
-		.args_size	= sizeof(args_len),
-		.lid		= WDC_NVME_GET_DEV_MGMNT_LOG_PAGE_ID,
 		.nsid		= 0xFFFFFFFF,
-		.lpo		= 0,
-		.lsp		= NVME_LOG_LSP_NONE,
-		.lsi		= 0,
 		.rae		= false,
-		.uuidx		= uuid_ix,
+		.lsp		= NVME_LOG_LSP_NONE,
+		.lid		= WDC_NVME_GET_DEV_MGMNT_LOG_PAGE_ID,
+		.lsi		= 0,
 		.csi		= NVME_CSI_NVM,
 		.ot		= false,
-		.len		= WDC_C2_LOG_BUF_LEN,
+		.uidx		= uuid_ix,
+		.lpo		= 0,
 		.log		= data,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
+		.len		= WDC_C2_LOG_BUF_LEN,
 		.result		= NULL,
 	};
-	ret = nvme_get_log(l, &args_len);
+	ret = nvme_get_log(l, args_len.nsid, args_len.rae, args_len.lsp, args_len.lid, args_len.lsi,
+					   args_len.csi, args_len.ot, args_len.uidx, args_len.lpo, args_len.log,
+					   args_len.len, NVME_LOG_PAGE_PDU_SIZE, args_len.result);
 	if (ret) {
 		fprintf(stderr,
 			"ERROR: WDC: Unable to get 0x%x Log Page with uuid %d, ret = 0x%x\n",
@@ -2516,22 +2516,23 @@ static bool get_dev_mgmt_log_page_data(nvme_link_t l, void **log_data,
 
 		/* get the log page data with the increased length */
 		struct nvme_get_log_args args_data = {
-			.args_size	= sizeof(args_data),
-			.lid		= WDC_NVME_GET_DEV_MGMNT_LOG_PAGE_ID,
 			.nsid		= 0xFFFFFFFF,
-			.lpo		= 0,
-			.lsp		= NVME_LOG_LSP_NONE,
-			.lsi		= 0,
 			.rae		= false,
-			.uuidx		= uuid_ix,
+			.lsp		= NVME_LOG_LSP_NONE,
+			.lid		= WDC_NVME_GET_DEV_MGMNT_LOG_PAGE_ID,
+			.lsi		= 0,
 			.csi		= NVME_CSI_NVM,
 			.ot		= false,
-			.len		= length,
+			.uidx		= uuid_ix,
+			.lpo		= 0,
 			.log		= data,
-			.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
+			.len		= length,
 			.result		= NULL,
 		};
-		ret = nvme_get_log(l, &args_data);
+		ret = nvme_get_log(l, args_data.nsid, args_data.rae, args_data.lsp, args_data.lid,
+						   args_data.lsi, args_data.csi, args_data.ot, args_data.uidx,
+						   args_data.lpo, args_data.log, args_data.len, NVME_LOG_PAGE_PDU_SIZE,
+						   args_data.result);
 
 		if (ret) {
 			fprintf(stderr,
@@ -2584,22 +2585,22 @@ static bool get_dev_mgmt_log_page_lid_data(nvme_link_t l,
 
 	/* get the log page length */
 	struct nvme_get_log_args args_len = {
-		.args_size	= sizeof(args_len),
-		.lid		= lid,
 		.nsid		= 0xFFFFFFFF,
-		.lpo		= 0,
-		.lsp		= NVME_LOG_LSP_NONE,
-		.lsi		= 0,
 		.rae		= false,
-		.uuidx		= uuid_ix,
+		.lsp		= NVME_LOG_LSP_NONE,
+		.lid		= lid,
+		.lsi		= 0,
 		.csi		= NVME_CSI_NVM,
 		.ot		= false,
-		.len		= WDC_C2_LOG_BUF_LEN,
+		.uidx		= uuid_ix,
+		.lpo		= 0,
 		.log		= data,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
+		.len		= WDC_C2_LOG_BUF_LEN,
 		.result		= NULL,
 	};
-	ret = nvme_get_log(l, &args_len);
+	ret = nvme_get_log(l, args_len.nsid, args_len.rae, args_len.lsp, args_len.lid, args_len.lsi,
+					   args_len.csi, args_len.ot, args_len.uidx, args_len.lpo, args_len.log,
+					   args_len.len, NVME_LOG_PAGE_PDU_SIZE, args_len.result);
 	if (ret) {
 		fprintf(stderr,
 			"ERROR: WDC: Unable to get 0x%x Log Page length with uuid %d, ret = 0x%x\n",
@@ -2621,22 +2622,23 @@ static bool get_dev_mgmt_log_page_lid_data(nvme_link_t l,
 
 		/* get the log page data with the increased length */
 		struct nvme_get_log_args args_data = {
-			.args_size	= sizeof(args_data),
-			.lid		= lid,
 			.nsid		= 0xFFFFFFFF,
-			.lpo		= 0,
-			.lsp		= NVME_LOG_LSP_NONE,
-			.lsi		= 0,
 			.rae		= false,
-			.uuidx		= uuid_ix,
+			.lsp		= NVME_LOG_LSP_NONE,
+			.lid		= lid,
+			.lsi		= 0,
 			.csi		= NVME_CSI_NVM,
 			.ot		= false,
-			.len		= length,
+			.uidx		= uuid_ix,
+			.lpo		= 0,
 			.log		= data,
-			.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
+			.len		= length,
 			.result		= NULL,
 		};
-		ret = nvme_get_log(l, &args_data);
+		ret = nvme_get_log(l, args_data.nsid, args_data.rae, args_data.lsp, args_data.lid,
+						   args_data.lsi, args_data.csi, args_data.ot, args_data.uidx,
+						   args_data.lpo, args_data.log, args_data.len, NVME_LOG_PAGE_PDU_SIZE,
+						   args_data.result);
 
 		if (ret) {
 			fprintf(stderr,
@@ -2787,23 +2789,23 @@ static int wdc_get_supported_log_pages(nvme_link_t l,
 {
 	memset(supported, 0, sizeof(*supported));
 	struct nvme_get_log_args args = {
-		.lpo = 0,
-		.result = NULL,
-		.log = supported,
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = NVME_LOG_LID_SUPPORTED_LOG_PAGES,
-		.len = sizeof(*supported),
 		.nsid = NVME_NSID_ALL,
-		.csi = NVME_CSI_NVM,
-		.lsi = NVME_LOG_LSI_NONE,
-		.lsp = 0,
-		.uuidx = uuid_index,
 		.rae = false,
+		.lsp = 0,
+		.lid = NVME_LOG_LID_SUPPORTED_LOG_PAGES,
+		.lsi = NVME_LOG_LSI_NONE,
+		.csi = NVME_CSI_NVM,
 		.ot = false,
+		.uidx = uuid_index,
+		.lpo = 0,
+		.log = supported,
+		.len = sizeof(*supported),
+		.result = NULL,
 	};
 
-	return nvme_get_log(l, &args);
+	return nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 }
 
 static bool wdc_nvme_check_supported_log_page(nvme_root_t r,
@@ -4127,23 +4129,23 @@ static int dump_internal_logs(nvme_link_t l, const char *dir_name, int verbose)
 	}
 
 	struct nvme_get_log_args args = {
-		.lpo = 0,
-		.result = NULL,
-		.log = hdr,
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = NVME_LOG_LID_TELEMETRY_HOST,
-		.len = bs,
 		.nsid = NVME_NSID_ALL,
-		.csi = NVME_CSI_NVM,
-		.lsi = NVME_LOG_LSI_NONE,
-		.lsp = NVME_LOG_TELEM_HOST_LSP_CREATE,
-		.uuidx = NVME_UUID_NONE,
 		.rae = true,
+		.lsp = NVME_LOG_TELEM_HOST_LSP_CREATE,
+		.lid = NVME_LOG_LID_TELEMETRY_HOST,
+		.lsi = NVME_LOG_LSI_NONE,
+		.csi = NVME_CSI_NVM,
 		.ot = false,
+		.uidx = NVME_UUID_NONE,
+		.lpo = 0,
+		.log = hdr,
+		.len = bs,
+		.result = NULL,
 	};
 
-	err = nvme_get_log(l, &args);
+	err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 	if (err < 0)
 		perror("get-telemetry-log");
 	else if (err > 0) {
@@ -4164,7 +4166,9 @@ static int dump_internal_logs(nvme_link_t l, const char *dir_name, int verbose)
 		args.log = telemetry_log;
 		args.lpo = offset;
 		args.lsp = NVME_LOG_LSP_NONE;
-		err = nvme_get_log(l, &args);
+		err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+						   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+						   args.result);
 		if (err < 0) {
 			perror("get-telemetry-log");
 			break;
@@ -6238,22 +6242,22 @@ static int nvme_get_print_ocp_cloud_smart_log(nvme_link_t l,
 
 	/* Get the 0xC0 log data */
 	struct nvme_get_log_args args = {
-		.args_size	= sizeof(args),
-		.lid		= WDC_NVME_GET_SMART_CLOUD_ATTR_LOG_ID,
 		.nsid		= namespace_id,
-		.lpo		= 0,
-		.lsp		= NVME_LOG_LSP_NONE,
-		.lsi		= 0,
 		.rae		= false,
-		.uuidx		= uuid_index,
+		.lsp		= NVME_LOG_LSP_NONE,
+		.lid		= WDC_NVME_GET_SMART_CLOUD_ATTR_LOG_ID,
+		.lsi		= 0,
 		.csi		= NVME_CSI_NVM,
 		.ot			= false,
-		.len		= length,
+		.uidx		= uuid_index,
+		.lpo		= 0,
 		.log		= log_ptr,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
+		.len		= length,
 		.result		= NULL,
 	};
-	ret = nvme_get_log(l, &args);
+	ret = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 
 	if (fmt == JSON)
 		nvme_show_status(ret);
@@ -6313,22 +6317,22 @@ static int nvme_get_print_c0_eol_log(nvme_link_t l,
 
 	/* Get the 0xC0 log data */
 	struct nvme_get_log_args args = {
-		.args_size	= sizeof(args),
-		.lid		= WDC_NVME_GET_EOL_STATUS_LOG_OPCODE,
 		.nsid		= namespace_id,
-		.lpo		= 0,
-		.lsp		= NVME_LOG_LSP_NONE,
-		.lsi		= 0,
 		.rae		= false,
-		.uuidx		= uuid_index,
+		.lsp		= NVME_LOG_LSP_NONE,
+		.lid		= WDC_NVME_GET_EOL_STATUS_LOG_OPCODE,
+		.lsi		= 0,
 		.csi		= NVME_CSI_NVM,
 		.ot			= false,
-		.len		= length,
+		.uidx		= uuid_index,
+		.lpo		= 0,
 		.log		= log_ptr,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
+		.len		= length,
 		.result		= NULL,
 	};
-	ret = nvme_get_log(l, &args);
+	ret = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 
 	if (fmt == JSON)
 		nvme_show_status(ret);
@@ -6359,22 +6363,22 @@ static int nvme_get_ext_smart_cloud_log(nvme_link_t l, __u8 **data, int uuid_ind
 
 	/* Get the 0xC0 log data */
 	struct nvme_get_log_args args = {
-		.args_size	= sizeof(args),
-		.lid		= WDC_NVME_GET_SMART_CLOUD_ATTR_LOG_ID,
 		.nsid		= namespace_id,
-		.lpo		= 0,
-		.lsp		= NVME_LOG_LSP_NONE,
-		.lsi		= 0,
 		.rae		= false,
-		.uuidx		= uuid_index,
+		.lsp		= NVME_LOG_LSP_NONE,
+		.lid		= WDC_NVME_GET_SMART_CLOUD_ATTR_LOG_ID,
+		.lsi		= 0,
 		.csi		= NVME_CSI_NVM,
 		.ot			= false,
-		.len		= WDC_NVME_SMART_CLOUD_ATTR_LEN,
+		.uidx		= uuid_index,
+		.lpo		= 0,
 		.log		= log_ptr,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
+		.len		= WDC_NVME_SMART_CLOUD_ATTR_LEN,
 		.result		= NULL,
 	};
-	ret = nvme_get_log(l, &args);
+	ret = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 
 	if (!ret) {
 		/* Verify GUID matches */
@@ -6416,22 +6420,22 @@ static int nvme_get_hw_rev_log(nvme_link_t l, __u8 **data, int uuid_index, __u32
 
 	/* Get the 0xC0 log data */
 	struct nvme_get_log_args args = {
-		.args_size	= sizeof(args),
-		.lid		= WDC_NVME_GET_HW_REV_LOG_OPCODE,
 		.nsid		= namespace_id,
-		.lpo		= 0,
-		.lsp		= NVME_LOG_LSP_NONE,
-		.lsi		= 0,
 		.rae		= false,
-		.uuidx		= uuid_index,
+		.lsp		= NVME_LOG_LSP_NONE,
+		.lid		= WDC_NVME_GET_HW_REV_LOG_OPCODE,
+		.lsi		= 0,
 		.csi		= NVME_CSI_NVM,
 		.ot			= false,
-		.len		= WDC_NVME_HW_REV_LOG_PAGE_LEN,
+		.uidx		= uuid_index,
+		.lpo		= 0,
 		.log		= log_ptr,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
+		.len		= WDC_NVME_HW_REV_LOG_PAGE_LEN,
 		.result		= NULL,
 	};
-	ret = nvme_get_log(l, &args);
+	ret = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 
 	if (!ret) {
 		/* Verify GUID matches */
@@ -7467,7 +7471,7 @@ static int wdc_get_ca_log_page(nvme_root_t r, nvme_link_t l, char *format)
 
 			ret = nvme_get_log_simple(l,
 						  WDC_NVME_GET_DEVICE_INFO_LOG_OPCODE,
-						  WDC_FB_CA_LOG_BUF_LEN, data);
+						  data, WDC_FB_CA_LOG_BUF_LEN);
 			if (strcmp(format, "json"))
 				nvme_show_status(ret);
 
@@ -7503,7 +7507,7 @@ static int wdc_get_ca_log_page(nvme_root_t r, nvme_link_t l, char *format)
 
 			ret = nvme_get_log_simple(l,
 						  WDC_NVME_GET_DEVICE_INFO_LOG_OPCODE,
-						  WDC_FB_CA_LOG_BUF_LEN, data);
+						  data, WDC_FB_CA_LOG_BUF_LEN);
 			if (strcmp(format, "json"))
 				nvme_show_status(ret);
 
@@ -7526,7 +7530,7 @@ static int wdc_get_ca_log_page(nvme_root_t r, nvme_link_t l, char *format)
 			memset(data, 0, sizeof(__u8) * WDC_BD_CA_LOG_BUF_LEN);
 			ret = nvme_get_log_simple(l,
 						  WDC_NVME_GET_DEVICE_INFO_LOG_OPCODE,
-						  WDC_BD_CA_LOG_BUF_LEN, data);
+						  data, WDC_BD_CA_LOG_BUF_LEN);
 			if (strcmp(format, "json"))
 				nvme_show_status(ret);
 
@@ -7587,7 +7591,7 @@ static int wdc_get_c1_log_page(nvme_root_t r, nvme_link_t link,
 	memset(data, 0, sizeof(__u8) * WDC_ADD_LOG_BUF_LEN);
 
 	ret = nvme_get_log_simple(link, WDC_NVME_ADD_LOG_OPCODE,
-				  WDC_ADD_LOG_BUF_LEN, data);
+				  data, WDC_ADD_LOG_BUF_LEN);
 	if (strcmp(format, "json"))
 		nvme_show_status(ret);
 	if (!ret) {
@@ -7636,7 +7640,7 @@ static int wdc_get_c3_log_page(nvme_root_t r, nvme_link_t l, char *format)
 	memset(data, 0, sizeof(__u8) * WDC_LATENCY_MON_LOG_BUF_LEN);
 
 	ret = nvme_get_log_simple(l, WDC_LATENCY_MON_LOG_ID,
-				  WDC_LATENCY_MON_LOG_BUF_LEN, data);
+				  data, WDC_LATENCY_MON_LOG_BUF_LEN);
 
 	if (strcmp(format, "json"))
 		fprintf(stderr, "NVMe Status:%s(%x)\n", nvme_status_to_string(ret, false), ret);
@@ -7708,7 +7712,7 @@ static int wdc_get_ocp_c1_log_page(nvme_root_t r, nvme_link_t l, char *format)
 	memset(data, 0, sizeof(__u8) * WDC_ERROR_REC_LOG_BUF_LEN);
 
 	ret = nvme_get_log_simple(l, WDC_ERROR_REC_LOG_ID,
-				  WDC_ERROR_REC_LOG_BUF_LEN, data);
+				  data, WDC_ERROR_REC_LOG_BUF_LEN);
 
 	if (strcmp(format, "json"))
 		fprintf(stderr, "NVMe Status:%s(%x)\n", nvme_status_to_string(ret, false), ret);
@@ -7780,7 +7784,7 @@ static int wdc_get_ocp_c4_log_page(nvme_root_t r, nvme_link_t l, char *format)
 	memset(data, 0, sizeof(__u8) * WDC_DEV_CAP_LOG_BUF_LEN);
 
 	ret = nvme_get_log_simple(l, WDC_DEV_CAP_LOG_ID,
-				  WDC_DEV_CAP_LOG_BUF_LEN, data);
+				  data, WDC_DEV_CAP_LOG_BUF_LEN);
 
 	if (strcmp(format, "json"))
 		fprintf(stderr, "NVMe Status:%s(%x)\n", nvme_status_to_string(ret, false), ret);
@@ -7850,7 +7854,7 @@ static int wdc_get_ocp_c5_log_page(nvme_root_t r, nvme_link_t l, char *format)
 	memset(data, 0, sizeof(__u8) * WDC_UNSUPPORTED_REQS_LOG_BUF_LEN);
 
 	ret = nvme_get_log_simple(l, WDC_UNSUPPORTED_REQS_LOG_ID,
-				  WDC_UNSUPPORTED_REQS_LOG_BUF_LEN, data);
+				  data, WDC_UNSUPPORTED_REQS_LOG_BUF_LEN);
 
 	if (strcmp(format, "json"))
 		fprintf(stderr, "NVMe Status:%s(%x)\n", nvme_status_to_string(ret, false), ret);
@@ -7929,7 +7933,7 @@ static int wdc_get_d0_log_page(nvme_root_t r, nvme_link_t l, char *format)
 
 	ret = nvme_get_log_simple(l,
 				  WDC_NVME_GET_VU_SMART_LOG_OPCODE,
-				  WDC_NVME_VU_SMART_LOG_LEN, data);
+				  data, WDC_NVME_VU_SMART_LOG_LEN);
 	if (strcmp(format, "json"))
 		nvme_show_status(ret);
 
@@ -8440,24 +8444,24 @@ static int wdc_cu_smart_log(int argc, char **argv, struct command *command,
 
 			memset(data, 0, sizeof(__u8) * WDC_BD_CA_LOG_BUF_LEN);
 			struct nvme_get_log_args args = {
-				.lpo = 0,
-				.result = NULL,
-				.log = data,
-				.args_size = sizeof(args),
-				.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-				.lid = WDC_NVME_GET_DEVICE_INFO_LOG_OPCODE,
-				.len = WDC_BD_CA_LOG_BUF_LEN,
 				.nsid = NVME_NSID_ALL,
-				.csi = NVME_CSI_NVM,
-				.lsi = NVME_LOG_LSI_NONE,
-				.lsp = 0,
-				.uuidx = cfg.uuid_index,
 				.rae = false,
+				.lsp = 0,
+				.lid = WDC_NVME_GET_DEVICE_INFO_LOG_OPCODE,
+				.lsi = NVME_LOG_LSI_NONE,
+				.csi = NVME_CSI_NVM,
 				.ot = false,
+				.uidx = cfg.uuid_index,
+				.lpo = 0,
+				.log = data,
+				.len = WDC_BD_CA_LOG_BUF_LEN,
+				.result = NULL,
 			};
 
 			/* Get the CA Log Page */
-			ret = nvme_get_log(l, &args);
+			ret = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi,
+							   args.ot, args.uidx, args.lpo, args.log, args.len,
+							   NVME_LOG_PAGE_PDU_SIZE, args.result);
 
 			if (strcmp(cfg.output_format, "json"))
 				nvme_show_status(ret);
@@ -9234,7 +9238,7 @@ static int wdc_get_fw_act_history(nvme_root_t r, nvme_link_t l,
 
 	ret = nvme_get_log_simple(l,
 				  WDC_NVME_GET_FW_ACT_HISTORY_LOG_ID,
-				  WDC_FW_ACT_HISTORY_LOG_BUF_LEN, data);
+				  data, WDC_FW_ACT_HISTORY_LOG_BUF_LEN);
 
 	if (strcmp(format, "json"))
 		nvme_show_status(ret);
@@ -9314,7 +9318,7 @@ static int wdc_get_fw_act_history_C2(nvme_root_t r, nvme_link_t l,
 
 	ret = nvme_get_log_simple(l,
 				  WDC_NVME_GET_FW_ACT_HISTORY_C2_LOG_ID,
-				  WDC_FW_ACT_HISTORY_C2_LOG_BUF_LEN, data);
+				  data, WDC_FW_ACT_HISTORY_C2_LOG_BUF_LEN);
 
 	if (strcmp(format, "json"))
 		nvme_show_status(ret);
@@ -10217,7 +10221,7 @@ static int wdc_do_drive_essentials(nvme_root_t r, nvme_link_t l,
 
 		ret = nvme_get_log_simple(l,
 					  deVULogPagesList[vuLogIdx].logPageId,
-					  dataBufferSize, dataBuffer);
+					  dataBuffer, dataBufferSize);
 		if (ret) {
 			fprintf(stderr, "ERROR: WDC: nvme_get_log() for log page 0x%x failed, ret = %d\n",
 					deVULogPagesList[vuLogIdx].logPageId, ret);
@@ -11017,8 +11021,7 @@ static int wdc_dump_telemetry_hdr(nvme_link_t l, int log_id, struct nvme_telemet
 	if (log_id == NVME_LOG_LID_TELEMETRY_HOST)
 		ret = nvme_get_log_create_telemetry_host(l, log_hdr);
 	else
-		ret = nvme_get_log_telemetry_ctrl(l, false, 0, 512,
-						  (void *)log_hdr);
+		ret = nvme_get_log_telemetry_ctrl(l, false, 0, (void *)log_hdr, 512);
 
 	if (ret < 0) {
 		perror("get-telemetry-log");
@@ -11460,7 +11463,7 @@ static int wdc_do_vs_nand_stats(nvme_link_t l, char *format)
 	}
 
 	ret = nvme_get_log_simple(l, WDC_NVME_NAND_STATS_LOG_ID,
-				  WDC_NVME_NAND_STATS_SIZE, (void *)output);
+				  (void *)output, WDC_NVME_NAND_STATS_SIZE);
 	if (ret) {
 		fprintf(stderr, "ERROR: WDC: %s : Failed to retrieve NAND stats\n", __func__);
 		goto out;

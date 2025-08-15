@@ -141,8 +141,8 @@ static int get_additional_smart_log(int argc, char **argv, struct command *cmd, 
 	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
 		return err;
-	err = nvme_get_nsid_log(l, false, 0xca, cfg.namespace_id,
-				sizeof(smart_log), &smart_log);
+	err = nvme_get_nsid_log(l, cfg.namespace_id, false, 0xca,
+				&smart_log, sizeof(smart_log));
 	if (!err) {
 		if (!cfg.raw_binary)
 			show_shannon_smart_log(&smart_log, cfg.namespace_id, nvme_link_get_name(l));

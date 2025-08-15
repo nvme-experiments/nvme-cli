@@ -34,10 +34,8 @@ static int get_c0_log_page(nvme_link_t l, char *format,
 	int i;
 	int ret;
 	struct nvme_get_log_args args = {
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = (enum nvme_cmd_get_log_lid)OCP_LID_SMART,
 		.nsid = NVME_NSID_ALL,
+		.lid = (enum nvme_cmd_get_log_lid)OCP_LID_SMART,
 		.len = C0_SMART_CLOUD_ATTR_LEN,
 	};
 
@@ -55,8 +53,10 @@ static int get_c0_log_page(nvme_link_t l, char *format,
 	memset(data, 0, sizeof(__u8) * C0_SMART_CLOUD_ATTR_LEN);
 
 	args.log = data;
-	ocp_get_uuid_index(l, &args.uuidx);
-	ret = nvme_get_log_page(l, NVME_LOG_PAGE_PDU_SIZE, &args);
+	ocp_get_uuid_index(l, &args.uidx);
+	ret = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 
 	if (strcmp(format, "json"))
 		fprintf(stderr, "NVMe Status:%s(%x)\n",

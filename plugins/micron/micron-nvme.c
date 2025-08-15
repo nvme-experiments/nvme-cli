@@ -396,7 +396,7 @@ static int GetLogPageSize(nvme_link_t l, unsigned char ucLogID, int *nLogSize)
 	struct LogPageHeader_t *pLogHeader = NULL;
 
 	if (ucLogID == 0xC1 || ucLogID == 0xC2 || ucLogID == 0xC4) {
-		err = nvme_get_log_simple(l, ucLogID, CommonChunkSize, pTmpBuf);
+		err = nvme_get_log_simple(l, ucLogID, pTmpBuf, CommonChunkSize);
 		if (!err) {
 			pLogHeader = (struct LogPageHeader_t *) pTmpBuf;
 			struct LogPageHeader_t *pLogHeader1 = (struct LogPageHeader_t *) pLogHeader;
@@ -516,7 +516,7 @@ static int GetCommonLogPage(nvme_link_t l, unsigned char ucLogID,
 	if (!pTempPtr)
 		goto exit_status;
 	memset(pTempPtr, 0, nBuffSize);
-	err = nvme_get_log_simple(l, ucLogID, nBuffSize, pTempPtr);
+	err = nvme_get_log_simple(l, ucLogID, pTempPtr, nBuffSize);
 	*pBuffer = pTempPtr;
 
 exit_status:
@@ -1867,7 +1867,7 @@ static int micron_nand_stats(int argc, char **argv,
 	}
 
 	if ((ctrl.vs[536] == MICRON_CUST_ID_GG) && (eModel == M51CX)) {
-		err = nvme_get_log_simple(l, 0xC0, C0_log_size, logC0);
+		err = nvme_get_log_simple(l, 0xC0, logC0, C0_log_size);
 		if (err == 0) {
 			print_hyperscale_nand_stats((__u8 *)logC0, is_json);
 			goto out;
@@ -1877,12 +1877,12 @@ static int micron_nand_stats(int argc, char **argv,
 		}
 	}
 
-	err = nvme_get_log_simple(l, 0xD0, D0_log_size, extSmartLog);
+	err = nvme_get_log_simple(l, 0xD0, extSmartLog, D0_log_size);
 	has_d0_log = (err == 0);
 
 	/* should check for firmware version if this log is supported or not */
 	if (eModel != M5407 && eModel != M5410) {
-		err = nvme_get_log_simple(l, 0xFB, FB_log_size, logFB);
+		err = nvme_get_log_simple(l, 0xFB, logFB, FB_log_size);
 		has_fb_log = !err;
 	}
 
@@ -2001,7 +2001,7 @@ static int micron_smart_ext_log(int argc, char **argv,
 		err = -1;
 		goto out;
 	}
-	err = nvme_get_log_simple(l, log_id, E1_log_size, extSmartLog);
+	err = nvme_get_log_simple(l, log_id, extSmartLog, E1_log_size);
 	if (!err)
 		print_log((__u8 *)extSmartLog, is_json, log_id);
 
@@ -2047,7 +2047,7 @@ static int micron_work_load_log(int argc, char **argv, struct command *cmd, stru
 	eModel = GetDriveModel(ctrlIdx);
 	if (eModel == M6001 || eModel == M6004 || eModel == M6003) {
 		err =  nvme_get_log_simple(l, 0xC5,
-		C5_MicronWorkLoad_log_size, micronWorkLoadLog);
+		micronWorkLoadLog, C5_MicronWorkLoad_log_size);
 		if (!err)
 			print_log((__u8 *)micronWorkLoadLog, is_json, 0xC5);
 	} else {
@@ -2099,7 +2099,7 @@ static int micron_vendor_telemetry_log(int argc, char **argv,
 
 	eModel = GetDriveModel(ctrlIdx);
 	if (eModel == M6001 || eModel == M6004 || eModel == M6003) {
-		err =  nvme_get_log_simple(l, 0xC6, C6_log_size, vendorTelemetryLog);
+		err =  nvme_get_log_simple(l, 0xC6, vendorTelemetryLog, C6_log_size);
 		if (!err)
 			print_log((__u8 *)vendorTelemetryLog, is_json, 0xC6);
 	} else {
@@ -2247,10 +2247,10 @@ static void GetGenericLogs(nvme_link_t l, const char *dir)
 
 	/* get persistent event log */
 	(void)nvme_get_log_persistent_event(l, NVME_PEVENT_LOG_RELEASE_CTX,
-						sizeof(pevent_log), &pevent_log);
+						&pevent_log, sizeof(pevent_log));
 	memset(&pevent_log, 0, sizeof(pevent_log));
 	err = nvme_get_log_persistent_event(l, NVME_PEVENT_LOG_EST_CTX_AND_READ,
-						sizeof(pevent_log), &pevent_log);
+						&pevent_log, sizeof(pevent_log));
 	if (err) {
 		fprintf(stderr, "Setting persistent event log read ctx failed (ignored)!\n");
 		return;
@@ -2264,7 +2264,7 @@ static void GetGenericLogs(nvme_link_t l, const char *dir)
 	}
 
 	err = nvme_get_log_persistent_event(l, NVME_PEVENT_LOG_READ,
-						log_len, pevent_log_info);
+						pevent_log_info, log_len);
 	if (!err)
 		WriteData((__u8 *)pevent_log_info, log_len, dir,
 			  "persistent_event_log.bin", "persistent event log");
@@ -2333,9 +2333,9 @@ static int micron_telemetry_log(nvme_link_t l, __u8 type, __u8 **data,
 	if (!buffer)
 		return -1;
 	if (ctrl_init)
-		err = nvme_get_log_telemetry_ctrl(l, true, 0, bs, buffer);
+		err = nvme_get_log_telemetry_ctrl(l, true, 0, buffer, bs);
 	else
-		err = nvme_get_log_telemetry_host(l, 0, bs, buffer);
+		err = nvme_get_log_telemetry_host(l, 0, buffer, bs);
 	if (err) {
 		fprintf(stderr, "Failed to get telemetry log header for 0x%X\n", type);
 		free(buffer);
@@ -2363,9 +2363,9 @@ static int micron_telemetry_log(nvme_link_t l, __u8 type, __u8 **data,
 	if (buffer) {
 		while (!err && offset != *logSize) {
 			if (ctrl_init)
-				err = nvme_get_log_telemetry_ctrl(l, true, 0, *logSize, buffer + offset);
+				err = nvme_get_log_telemetry_ctrl(l, true, 0, buffer + offset, *logSize);
 			else
-				err = nvme_get_log_telemetry_host(l, 0, *logSize, buffer + offset);
+				err = nvme_get_log_telemetry_host(l, 0, buffer + offset, *logSize);
 			offset += bs;
 		}
 	}
@@ -2544,7 +2544,7 @@ static int micron_drive_info(int argc, char **argv, struct command *cmd,
 	}
 
 	if ((custId == MICRON_CUST_ID_GG) && (model == M51CX)) {
-		err = nvme_get_log_simple(l, 0xC0, C0_log_size, logC0);
+		err = nvme_get_log_simple(l, 0xC0, logC0, C0_log_size);
 		if (err == 0) {
 			dinfo.bs_ver_major  = *((__u16 *)(logC0+300));
 			dinfo.bs_ver_minor  = *((__u16 *)(logC0+302));
@@ -2839,7 +2839,7 @@ static int micron_fw_activation_history(int argc, char **argv, struct command *c
 		goto out;
 	}
 
-	err = nvme_get_log_simple(l, 0xC2, C2_log_size, logC2);
+	err = nvme_get_log_simple(l, 0xC2, logC2, C2_log_size);
 	if (err) {
 		fprintf(stderr, "Failed to retrieve fw activation history log, error: %x\n", err);
 		goto out;
@@ -3093,7 +3093,7 @@ static int micron_latency_stats_logs(int argc, char **argv, struct command *cmd,
 	if (err)
 		return err;
 	memset(&log, 0, sizeof(log));
-	err = nvme_get_log_simple(l, 0xD1, sizeof(log), &log);
+	err = nvme_get_log_simple(l, 0xD1, &log, sizeof(log));
 	if (err) {
 		if (err < 0)
 			printf("Unable to retrieve latency stats log the drive\n");
@@ -3180,7 +3180,7 @@ static int micron_latency_stats_info(int argc, char **argv, struct command *cmd,
 	}
 
 	memset(&log, 0, sizeof(log));
-	err = nvme_get_log_simple(l, 0xD0, sizeof(log), &log);
+	err = nvme_get_log_simple(l, 0xD0, &log, sizeof(log));
 	if (err) {
 		if (err < 0)
 			printf("Unable to retrieve latency stats log the drive\n");
@@ -3248,7 +3248,7 @@ static int micron_ocp_smart_health_logs(int argc, char **argv, struct command *c
 
 		err = nvme_identify_ctrl(l, &ctrl);
 		if (!err)
-			err = nvme_get_log_simple(l, 0xFB, FB_log_size, logFB);
+			err = nvme_get_log_simple(l, 0xFB, logFB, FB_log_size);
 		if (err) {
 			if (err < 0)
 				printf("Unable to retrieve smart log 0xFB for the drive\n");
@@ -3270,7 +3270,7 @@ static int micron_ocp_smart_health_logs(int argc, char **argv, struct command *c
 		goto out;
 	}
 
-	err = nvme_get_log_simple(l, 0xC0, C0_log_size, logC0);
+	err = nvme_get_log_simple(l, 0xC0, logC0, C0_log_size);
 	if (!err)
 		print_smart_cloud_health_log((__u8 *)logC0, is_json, eModel);
 	else if (err < 0)
@@ -3446,20 +3446,18 @@ int nvme_get_log_lpo(nvme_link_t l, __u8 log_id, __u32 lpo, __u32 chunk,
 	__u32 offset = lpo, xfer_len = data_len;
 	void *ptr = data;
 	struct nvme_get_log_args args = {
-		.lpo = offset,
-		.result = NULL,
-		.log = ptr,
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = log_id,
-		.len = xfer_len,
 		.nsid = NVME_NSID_ALL,
-		.csi = NVME_CSI_NVM,
-		.lsi = NVME_LOG_LSI_NONE,
-		.lsp = NVME_LOG_LSP_NONE,
-		.uuidx = NVME_UUID_NONE,
 		.rae = false,
+		.lsp = NVME_LOG_LSP_NONE,
+		.lid = log_id,
+		.lsi = NVME_LOG_LSI_NONE,
+		.csi = NVME_CSI_NVM,
 		.ot = false,
+		.uidx = NVME_UUID_NONE,
+		.lpo = offset,
+		.log = ptr,
+		.len = xfer_len,
+		.result = NULL,
 	};
 	int ret = 0;
 
@@ -3472,7 +3470,9 @@ int nvme_get_log_lpo(nvme_link_t l, __u8 log_id, __u32 lpo, __u32 chunk,
 		args.lpo = offset;
 		args.log = ptr;
 		args.len = xfer_len;
-		ret = nvme_get_log(l, &args);
+		ret = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+						   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+						   args.result);
 		if (ret)
 			return ret;
 		offset += xfer_len;
@@ -3490,7 +3490,7 @@ static int get_common_log(nvme_link_t l, uint8_t id, uint8_t **buf, int *size)
 	int ret = -1;
 	int chunk = 0x4000; /* max chunk size to be used for these logs */
 
-	ret = nvme_get_log_simple(l, id, sizeof(hdr), &hdr);
+	ret = nvme_get_log_simple(l, id, &hdr, sizeof(hdr));
 	if (ret) {
 		fprintf(stderr, "pull hdr failed for  %u with error: 0x%x\n", id, ret);
 		return ret;
@@ -4025,7 +4025,7 @@ static int micron_internal_logs(int argc, char **argv, struct command *cmd,
 				else
 					err = nvme_get_log_simple(l,
 								  aVendorLogs[i].ucLogPage,
-								  bSize, dataBuffer);
+								  dataBuffer, bSize);
 			}
 			break;
 		case 0xF7:
@@ -4043,14 +4043,14 @@ static int micron_internal_logs(int argc, char **argv, struct command *cmd,
 				break;
 			memset(dataBuffer, 0, bSize);
 			err = nvme_get_log_simple(l, aVendorLogs[i].ucLogPage,
-					  bSize, dataBuffer);
+					  dataBuffer, bSize);
 			maxSize = aVendorLogs[i].nMaxSize - bSize;
 			while (!err && maxSize > 0 && ((unsigned int *)dataBuffer)[0] != 0xdeadbeef) {
 				sprintf(msg, "log 0x%x", aVendorLogs[i].ucLogPage);
 				WriteData(dataBuffer, bSize, strCtrlDirName, aVendorLogs[i].strFileName, msg);
 				err = nvme_get_log_simple(l,
 					  aVendorLogs[i].ucLogPage,
-					  bSize, dataBuffer);
+					  dataBuffer, bSize);
 				if (err || (((unsigned int *)dataBuffer)[0] == 0xdeadbeef))
 					break;
 				maxSize -= bSize;
@@ -4131,7 +4131,7 @@ static int micron_logpage_dir(int argc, char **argv, struct command *cmd,
 	printf("Supported log page list\nLog ID : Description\n");
 	for (i = 0; i < ARRAY_SIZE(log_list); i++) {
 		err = nvme_get_log_simple(l, log_list[i].log_id,
-					  MIN_LOG_SIZE, &logbuf[0]);
+					  &logbuf[0], MIN_LOG_SIZE);
 		if (err)
 			continue;
 		printf("%02Xh    : %s\n", log_list[i].log_id, log_list[i].desc);
@@ -4180,7 +4180,7 @@ static int micron_cloud_boot_SSD_version(int argc, char **argv,
 		goto out;
 	}
 
-	err = nvme_get_log_simple(l, 0xC0, C0_log_size, logC0);
+	err = nvme_get_log_simple(l, 0xC0, logC0, C0_log_size);
 	if (err == 0) {
 		__u16 major, minor;
 
@@ -4248,7 +4248,7 @@ static int micron_device_waf(int argc, char **argv, struct command *cmd,
 		goto out;
 	}
 
-	err = nvme_get_log_simple(l, 0xC0, C0_log_size, logC0);
+	err = nvme_get_log_simple(l, 0xC0, logC0, C0_log_size);
 	if (err != 0) {
 		fprintf(stderr, "Failed to get extended smart log, err = %d\n", err);
 		goto out;
@@ -4313,7 +4313,7 @@ static int micron_cloud_log(int argc, char **argv, struct command *cmd,
 		goto out;
 	}
 
-	err = nvme_get_log_simple(l, 0xC0, C0_log_size, logC0);
+	err = nvme_get_log_simple(l, 0xC0, logC0, C0_log_size);
 	if (err == 0)
 		print_hyperscale_cloud_health_log((__u8 *)logC0, is_json);
 	else if (err < 0)

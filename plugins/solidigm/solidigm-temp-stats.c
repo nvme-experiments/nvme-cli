@@ -68,26 +68,28 @@ int sldgm_get_temp_stats_log(int argc, char **argv, struct command *cmd, struct 
 	sldgm_get_uuid_index(l, &uuid_idx);
 
 	struct nvme_get_log_args args = {
-		.lpo	= 0,
-		.result = NULL,
-		.log	= buffer,
-		.args_size = sizeof(args),
-		.uuidx	= uuid_idx,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid	= SLDGM_TEMP_STATS_LID,
-		.len	= sizeof(buffer),
 		.nsid	= NVME_NSID_ALL,
-		.csi	= NVME_CSI_NVM,
-		.lsi	= NVME_LOG_LSI_NONE,
-		.lsp	= NVME_LOG_LSP_NONE,
 		.rae	= false,
+		.lsp	= NVME_LOG_LSP_NONE,
+		.lid	= SLDGM_TEMP_STATS_LID,
+		.lsi	= NVME_LOG_LSI_NONE,
+		.csi	= NVME_CSI_NVM,
 		.ot	= false,
+		.uidx	= uuid_idx,
+		.lpo	= 0,
+		.log	= buffer,
+		.len	= sizeof(buffer),
+		.result = NULL,
 	};
 
-	err = nvme_get_log(l, &args);
+	err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 	if (err > 0) {
 		args.lid = SLDGM_LEGACY_TEMP_STATS_LID;
-		err = nvme_get_log(l, &args);
+		err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+						   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+						   args.result);
 		if (!err) {
 			uint64_t *guid = (uint64_t *)&buffer[4080];
 

@@ -45,23 +45,23 @@ static int get_supported_log_pages_log(nvme_link_t l, int uuid_index,
 {
 	memset(supported, 0, sizeof(*supported));
 	struct nvme_get_log_args args = {
-		.lpo = 0,
-		.result = NULL,
-		.log = supported,
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = NVME_LOG_LID_SUPPORTED_LOG_PAGES,
-		.len = sizeof(*supported),
 		.nsid = NVME_NSID_ALL,
-		.csi = NVME_CSI_NVM,
-		.lsi = NVME_LOG_LSI_NONE,
-		.lsp = 0,
-		.uuidx = uuid_index,
 		.rae = false,
+		.lsp = 0,
+		.lid = NVME_LOG_LID_SUPPORTED_LOG_PAGES,
+		.lsi = NVME_LOG_LSI_NONE,
+		.csi = NVME_CSI_NVM,
 		.ot = false,
+		.uidx = uuid_index,
+		.lpo = 0,
+		.log = supported,
+		.len = sizeof(*supported),
+		.result = NULL,
 	};
 
-	return nvme_get_log(l, &args);
+	return nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+						args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+						args.result);
 }
 
 static struct lid_dir *get_standard_lids(struct nvme_supported_log_pages *supported)

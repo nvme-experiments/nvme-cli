@@ -358,8 +358,8 @@ static int get_additional_smart_log(int argc, char **argv, struct command *cmd, 
 	if (err)
 		return err;
 
-	err = nvme_get_nsid_log(l, false, 0xca, cfg.namespace_id,
-				sizeof(smart_log), (void *)&smart_log);
+	err = nvme_get_nsid_log(l, cfg.namespace_id, false, 0xca,
+				(void *)&smart_log, sizeof(smart_log));
 	if (!err) {
 		if (cfg.json)
 			show_sfx_smart_log_jsn(&smart_log, cfg.namespace_id,
@@ -524,7 +524,7 @@ static int get_lat_stats_log(int argc, char **argv, struct command *cmd, struct 
 		return err;
 
 	err = nvme_get_log_simple(l, cfg.write ? 0xc3 : 0xc1,
-				  sizeof(stats), (void *)&stats);
+				  (void *)&stats, sizeof(stats));
 	if (!err) {
 		if ((stats.ver.maj == VANDA_MAJOR_IDX) && (stats.ver.min == VANDA_MINOR_IDX)) {
 			if (!cfg.raw_binary)
@@ -1219,19 +1219,17 @@ static int nvme_dump_evtlog(nvme_link_t l, __u32 namespace_id, __u32 storage_med
 	int  err = 0;
 	FILE *fd = NULL;
 	struct nvme_get_log_args args = {
-		.args_size	= sizeof(args),
-		.lid		= NVME_LOG_LID_PERSISTENT_EVENT,
 		.nsid		= namespace_id,
-		.lpo		= NVME_LOG_LPO_NONE,
-		.lsp		= NVME_LOG_LSP_NONE,
-		.lsi		= NVME_LOG_LSI_NONE,
 		.rae		= false,
-		.uuidx		= NVME_UUID_NONE,
+		.lsp		= NVME_LOG_LSP_NONE,
+		.lid		= NVME_LOG_LID_PERSISTENT_EVENT,
+		.lsi		= NVME_LOG_LSI_NONE,
 		.csi		= NVME_CSI_NVM,
 		.ot		= false,
-		.len		= 0,
+		.uidx		= NVME_UUID_NONE,
+		.lpo		= NVME_LOG_LPO_NONE,
 		.log		= NULL,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
+		.len		= 0,
 		.result		= NULL,
 	};
 
@@ -1253,14 +1251,18 @@ static int nvme_dump_evtlog(nvme_link_t l, __u32 namespace_id, __u32 storage_med
 	args.log = pevent;
 	args.len = sizeof(*pevent);
 
-	err = nvme_get_log(l, &args);
+	err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 	if (err) {
 		fprintf(stderr, "Unable to get evtlog lsp=0x%x, ret = 0x%x\n", args.lsp, err);
 		goto free_pevent;
 	}
 
 	args.lsp = lsp_base + NVME_PEVENT_LOG_EST_CTX_AND_READ;
-	err = nvme_get_log(l, &args);
+	err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 	if (err) {
 		fprintf(stderr, "Unable to get evtlog lsp=0x%x, ret = 0x%x\n", args.lsp, err);
 		goto free_pevent;
@@ -1294,7 +1296,9 @@ static int nvme_dump_evtlog(nvme_link_t l, __u32 namespace_id, __u32 storage_med
 			memset(args.log, 0, args.len);
 			args.len = length;
 		}
-		err = nvme_get_log(l, &args);
+		err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+						   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+						   args.result);
 		if (err) {
 			fprintf(stderr, "Unable to get evtlog offset=0x%x len 0x%x ret = 0x%x\n", offset, args.len, err);
 			goto close_fd;
@@ -1807,9 +1811,11 @@ static int sfx_status(int argc, char **argv, struct command *cmd, struct plugin 
 
 	//Populate SFX Extended Health log (0xC2) or if PCIe DID ==0x20 (Quince) use 0xD2
 	if (strncmp("0x0020", pci_did, 6) == 0)
-		err = nvme_get_log_simple(l, SFX_LOG_EXTENDED_HEALTH_ALT, sizeof(sfx_smart), (void *)&sfx_smart);
+		err = nvme_get_log_simple(l, SFX_LOG_EXTENDED_HEALTH_ALT, (void *)&sfx_smart,
+								  sizeof(sfx_smart));
 	else
-		err = nvme_get_log_simple(l, SFX_LOG_EXTENDED_HEALTH, sizeof(sfx_smart), (void *)&sfx_smart);
+		err = nvme_get_log_simple(l, SFX_LOG_EXTENDED_HEALTH, (void *)&sfx_smart,
+								  sizeof(sfx_smart));
 	if (err < 0) {
 		perror("Could not read ScaleFlux SMART log");
 		return -errno;
@@ -1836,7 +1842,8 @@ static int sfx_status(int argc, char **argv, struct command *cmd, struct plugin 
 	}
 
 	//Populate Additional SMART log (0xCA)
-	err = nvme_get_nsid_log(l, false, 0xca, NVME_NSID_ALL, sizeof(struct nvme_additional_smart_log), (void *)&additional_smart_log);
+	err = nvme_get_nsid_log(l, NVME_NSID_ALL, false, 0xca, (void *)&additional_smart_log,
+							sizeof(struct nvme_additional_smart_log));
 	if (err < 0) {
 		perror("Could not read ScaleFlux SMART log");
 		return -errno;

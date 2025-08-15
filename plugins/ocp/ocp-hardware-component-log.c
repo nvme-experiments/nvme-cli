@@ -175,20 +175,20 @@ static int get_hwcomp_log_data(nvme_link_t l, struct hwcomp_log *log)
 	nvme_uint128_t log_size;
 
 	struct nvme_get_log_args args = {
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = (enum nvme_cmd_get_log_lid)OCP_LID_HWCOMP,
 		.nsid = NVME_NSID_ALL,
+		.lid = (enum nvme_cmd_get_log_lid)OCP_LID_HWCOMP,
 		.log = log,
 		.len = desc_offset,
 	};
 
-	ocp_get_uuid_index(l, &args.uuidx);
+	ocp_get_uuid_index(l, &args.uidx);
 
 #ifdef HWCOMP_DUMMY
 	memcpy(log, hwcomp_dummy, desc_offset);
 #else /* HWCOMP_DUMMY */
-	ret = nvme_get_log_page(l, NVME_LOG_PAGE_PDU_SIZE, &args);
+	ret = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 	if (ret) {
 		print_info_error("error: ocp: failed to get hwcomp log size (ret: %d)\n", ret);
 		return ret;
@@ -227,7 +227,9 @@ static int get_hwcomp_log_data(nvme_link_t l, struct hwcomp_log *log)
 #ifdef HWCOMP_DUMMY
 	memcpy(log->desc, &hwcomp_dummy[desc_offset], args.len);
 #else /* HWCOMP_DUMMY */
-	ret = nvme_get_log_page(l, NVME_LOG_PAGE_PDU_SIZE, &args);
+	ret = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 	if (ret) {
 		print_info_error("error: ocp: failed to get log page (hwcomp: %02X, ret: %d)\n",
 				 OCP_LID_HWCOMP, ret);

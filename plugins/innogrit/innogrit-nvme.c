@@ -41,22 +41,22 @@ static int getlogpage(nvme_link_t l, unsigned char ilogid, unsigned char ilsp,
 		      char *data, int data_len, unsigned int *result)
 {
 	struct nvme_get_log_args args = {
-		.args_size	= sizeof(args),
-		.lid		= ilogid,
 		.nsid		= 0xffffffff,
-		.lpo		= 0,
-		.lsp		= ilsp,
-		.lsi		= 0,
 		.rae		= true,
-		.uuidx		= 0,
+		.lsp		= ilsp,
+		.lid		= ilogid,
+		.lsi		= 0,
 		.csi		= NVME_CSI_NVM,
 		.ot		= false,
-		.len		= data_len,
+		.uidx		= 0,
+		.lpo		= 0,
 		.log		= (void *)data,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
+		.len		= data_len,
 		.result		= result,
 	};
-	return nvme_get_log(l, &args);
+	return nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 }
 
 static int getvsctype(nvme_link_t l)
@@ -285,9 +285,8 @@ static int innogrit_vsc_getcdump(int argc, char **argv, struct command *command,
 
 	if (busevsc == false) {
 		memset(data, 0, 4096);
-		ret = nvme_get_nsid_log(l, true, 0x07,
-					NVME_NSID_ALL,
-					4096, data);
+		ret = nvme_get_nsid_log(l, NVME_NSID_ALL,true, 0x07,
+					data, 4096);
 		if (ret != 0)
 			return ret;
 
@@ -324,9 +323,8 @@ static int innogrit_vsc_getcdump(int argc, char **argv, struct command *command,
 						0x82, 0x00,	0, 0, (char *)data, 4096);
 				}
 			} else {
-				ret = nvme_get_nsid_log(l, true,
-							0x07,
-							NVME_NSID_ALL, 4096, data);
+				ret = nvme_get_nsid_log(l, NVME_NSID_ALL, true,
+							0x07, data, 4096);
 			}
 			if (ret != 0)
 				return ret;
@@ -353,10 +351,8 @@ static int innogrit_vsc_getcdump(int argc, char **argv, struct command *command,
 						0x82, 0x00,	0, 0, (char *)data, 4096);
 				}
 			} else {
-				ret = nvme_get_nsid_log(l, true,
-							0x07,
-							NVME_NSID_ALL, 4096,
-							data);
+				ret = nvme_get_nsid_log(l, NVME_NSID_ALL, true,
+							0x07, data, 4096);
 			}
 			if (ret != 0)
 				return ret;

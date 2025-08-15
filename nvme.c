@@ -594,8 +594,7 @@ static int get_ana_log(int argc, char **argv, struct command *cmd,
 	if (!ana_log)
 		return -ENOMEM;
 
-	err = nvme_get_ana_log_atomic(l, cfg.groups, true, 10,
-				      ana_log, &ana_log_len);
+	err = nvme_get_ana_log_atomic(l, true, cfg.groups, ana_log, &ana_log_len, 10);
 	if (!err)
 		nvme_show_ana_log(ana_log, nvme_link_get_name(l), ana_log_len, flags);
 	else if (err > 0)
@@ -679,7 +678,7 @@ static int get_log_telemetry_ctrl(nvme_link_t l, bool rae, size_t size,
 	if (!log)
 		return -ENOMEM;
 
-	err = nvme_get_log_telemetry_ctrl(l, rae, 0, size, log);
+	err = nvme_get_log_telemetry_ctrl(l, rae, 0, log, size);
 	if (err) {
 		free(log);
 		return err;
@@ -699,7 +698,7 @@ static int get_log_telemetry_host(nvme_link_t l, size_t size,
 	if (!log)
 		return -ENOMEM;
 
-	err = nvme_get_log_telemetry_host(l, 0, size, log);
+	err = nvme_get_log_telemetry_host(l, 0, log, size);
 	if (err) {
 		free(log);
 		return err;
@@ -749,17 +748,15 @@ static int __get_telemetry_log_ctrl(nvme_link_t l,
 	 * set rae = true so it won't clear the current telemetry log in
 	 * controller
 	 */
-	err = nvme_get_log_telemetry_ctrl(l, true, 0,
-					  NVME_LOG_TELEM_BLOCK_SIZE,
-					  log);
+	err = nvme_get_log_telemetry_ctrl(l, true, 0, log,
+					  NVME_LOG_TELEM_BLOCK_SIZE);
 	if (err)
 		goto free;
 
 	if (!log->ctrlavail) {
 		if (!rae) {
-			err = nvme_get_log_telemetry_ctrl(l, rae, 0,
-							  NVME_LOG_TELEM_BLOCK_SIZE,
-							  log);
+			err = nvme_get_log_telemetry_ctrl(l, rae, 0, log,
+							  NVME_LOG_TELEM_BLOCK_SIZE);
 			goto free;
 		}
 
@@ -793,9 +790,8 @@ static int __get_telemetry_log_host(nvme_link_t l,
 	if (!log)
 		return -ENOMEM;
 
-	err = nvme_get_log_telemetry_host(l, 0,
-					  NVME_LOG_TELEM_BLOCK_SIZE,
-					  log);
+	err = nvme_get_log_telemetry_host(l, 0, log,
+					  NVME_LOG_TELEM_BLOCK_SIZE);
 	if (err)
 		return  err;
 
@@ -1316,8 +1312,8 @@ static int get_changed_ns_list_log(int argc, char **argv, bool alloc)
 
 	if (alloc)
 		err = nvme_get_log_changed_alloc_ns_list(l, true,
-							 sizeof(*changed_ns_list_log),
-							 changed_ns_list_log);
+							 changed_ns_list_log,
+							 sizeof(*changed_ns_list_log));
 	else
 		err = nvme_get_log_changed_ns_list(l, true,
 						   changed_ns_list_log);
@@ -1476,7 +1472,7 @@ static int get_pred_lat_event_agg_log(int argc, char **argv,
 		return -ENOMEM;
 
 	err = nvme_get_log_predictable_lat_event(l, cfg.rae, 0,
-						 log_size, pea_log);
+						 pea_log, log_size);
 	if (!err)
 		nvme_show_predictable_latency_event_agg_log(pea_log, cfg.log_entries, log_size,
 							    nvme_link_get_name(l), flags);
@@ -1542,7 +1538,7 @@ static int get_persistent_event_log(int argc, char **argv,
 		return -ENOMEM;
 
 	err = nvme_get_log_persistent_event(l, cfg.action,
-					    sizeof(*pevent), pevent);
+					    pevent, sizeof(*pevent));
 	if (err < 0) {
 		nvme_show_error("persistent event log: %s", nvme_strerror(-err));
 		return err;
@@ -1580,11 +1576,11 @@ static int get_persistent_event_log(int argc, char **argv,
 	}
 
 	err = nvme_get_log_persistent_event(l, cfg.action,
-					    cfg.log_len, pevent_log_info);
+					    pevent_log_info, cfg.log_len);
 	if (!err) {
 		err = nvme_get_log_persistent_event(l, cfg.action,
-							sizeof(*pevent),
-							pevent);
+							pevent,
+							sizeof(*pevent));
 		if (err < 0) {
 			nvme_show_error("persistent event log: %s", nvme_strerror(-err));
 			return err;
@@ -1681,8 +1677,7 @@ static int get_endurance_event_agg_log(int argc, char **argv,
 	if (!endurance_log)
 		return -ENOMEM;
 
-	err = nvme_get_log_endurance_grp_evt(l, cfg.rae, 0, log_size,
-					     endurance_log);
+	err = nvme_get_log_endurance_grp_evt(l, cfg.rae, 0, endurance_log, log_size);
 	if (!err)
 		nvme_show_endurance_group_event_agg_log(endurance_log, cfg.log_entries, log_size,
 							nvme_link_get_name(l), flags);
@@ -1729,8 +1724,7 @@ static int get_lba_status_log(int argc, char **argv,
 		return err;
 	}
 
-	err = nvme_get_log_lba_status(l, true, 0, sizeof(__u32),
-					  &lslplen);
+	err = nvme_get_log_lba_status(l, true, 0, &lslplen, sizeof(__u32));
 	if (err < 0) {
 		nvme_show_error("lba status log page: %s", nvme_strerror(-err));
 		return err;
@@ -1743,7 +1737,7 @@ static int get_lba_status_log(int argc, char **argv,
 	if (!lba_status)
 		return -ENOMEM;
 
-	err = nvme_get_log_lba_status(l, cfg.rae, 0, lslplen, lba_status);
+	err = nvme_get_log_lba_status(l, cfg.rae, 0, lba_status, lslplen);
 	if (!err)
 		nvme_show_lba_status_log(lba_status, lslplen, nvme_link_get_name(l), flags);
 	else if (err > 0)
@@ -1857,8 +1851,7 @@ static int get_boot_part_log(int argc, char **argv, struct command *cmd, struct 
 	if (!boot)
 		return -ENOMEM;
 
-	err = nvme_get_log_boot_partition(l, false, cfg.lsp,
-					      sizeof(*boot), boot);
+	err = nvme_get_log_boot_partition(l, false, cfg.lsp, boot, sizeof(*boot));
 	if (err < 0) {
 		nvme_show_error("boot partition log: %s", nvme_strerror(-err));
 		return err;
@@ -1873,8 +1866,8 @@ static int get_boot_part_log(int argc, char **argv, struct command *cmd, struct 
 		return -ENOMEM;
 
 	err = nvme_get_log_boot_partition(l, false, cfg.lsp,
-					  sizeof(*boot) + bpsz,
-					  (struct nvme_boot_partition *)bp_log);
+					  (struct nvme_boot_partition *)bp_log,
+					  sizeof(*boot) + bpsz);
 	if (!err)
 		nvme_show_boot_part_log(&bp_log, nvme_link_get_name(l),
 					sizeof(*boot) + bpsz, flags);
@@ -1952,8 +1945,8 @@ static int get_phy_rx_eom_log(int argc, char **argv, struct command *cmd,
 	/* Just read measurement, take given action when fetching full log */
 	lsp_tmp = cfg.lsp & 0xf3;
 
-	err = nvme_get_log_phy_rx_eom(l, lsp_tmp, cfg.controller, phy_rx_eom_log_len,
-					  phy_rx_eom_log);
+	err = nvme_get_log_phy_rx_eom(l, lsp_tmp, cfg.controller, phy_rx_eom_log,
+								  phy_rx_eom_log_len);
 	if (err) {
 		if (err > 0)
 			nvme_show_status(err);
@@ -1974,8 +1967,8 @@ static int get_phy_rx_eom_log(int argc, char **argv, struct command *cmd,
 	if (!phy_rx_eom_log)
 		return -ENOMEM;
 
-	err = nvme_get_log_phy_rx_eom(l, cfg.lsp, cfg.controller, phy_rx_eom_log_len,
-				      phy_rx_eom_log);
+	err = nvme_get_log_phy_rx_eom(l, cfg.lsp, cfg.controller, phy_rx_eom_log,
+								  phy_rx_eom_log_len);
 	if (!err)
 		nvme_show_phy_rx_eom_log(phy_rx_eom_log, cfg.controller, flags);
 	else if (err > 0)
@@ -2417,21 +2410,23 @@ static int get_log(int argc, char **argv, struct command *cmd, struct plugin *pl
 		return -ENOMEM;
 
 	struct nvme_get_log_args args = {
-		.args_size	= sizeof(args),
-		.lid		= cfg.log_id,
 		.nsid		= cfg.namespace_id,
-		.lpo		= cfg.lpo,
-		.lsp		= cfg.lsp,
-		.lsi		= cfg.lsi,
 		.rae		= cfg.rae,
-		.uuidx		= cfg.uuid_index,
+		.lsp		= cfg.lsp,
+		.lid		= cfg.log_id,
+		.lsi		= cfg.lsi,
 		.csi		= cfg.csi,
 		.ot		= cfg.ot,
-		.len		= cfg.log_len,
+		.uidx		= cfg.uuid_index,
+		.lpo		= cfg.lpo,
 		.log		= log,
+		.len		= cfg.log_len,
 		.result		= NULL,
 	};
-	err = nvme_get_log_page(l, cfg.xfer_len, &args);
+
+	err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi,
+					   args.ot, args.uidx, args.lpo, args.log, args.len, cfg.xfer_len,
+					   args.result);
 	if (!err) {
 		if (!cfg.raw_binary) {
 			printf("Device:%s log-id:%d namespace-id:%#x\n", nvme_link_get_name(l),
@@ -10371,7 +10366,7 @@ static int get_mgmt_addr_list_log(int argc, char **argv, struct command *cmd, st
 	if (!ma_log)
 		return -ENOMEM;
 
-	err = nvme_get_log_mgmt_addr_list(l, sizeof(*ma_log), ma_log);
+	err = nvme_get_log_mgmt_addr_list(l, ma_log, sizeof(*ma_log));
 	if (!err)
 		nvme_show_mgmt_addr_list_log(ma_log, flags);
 	else if (err > 0)
@@ -10418,7 +10413,7 @@ static int get_rotational_media_info_log(int argc, char **argv, struct command *
 	if (!info)
 		return -ENOMEM;
 
-	err = nvme_get_log_rotational_media_info(l, cfg.endgid, sizeof(*info), info);
+	err = nvme_get_log_rotational_media_info(l, cfg.endgid, info, sizeof(*info));
 	if (!err)
 		nvme_show_rotational_media_info_log(info, flags);
 	else if (err > 0)
@@ -10436,18 +10431,17 @@ static int get_dispersed_ns_psub(nvme_link_t l, __u32 nsid,
 	__u64 header_len = sizeof(**logp);
 	__u64 psub_list_len;
 	struct nvme_get_log_args args = {
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = NVME_LOG_LID_DISPERSED_NS_PARTICIPATING_NSS,
 		.nsid = nsid,
+		.lid = NVME_LOG_LID_DISPERSED_NS_PARTICIPATING_NSS,
 		.lpo = header_len,
+		.result = NULL,
 	};
 	struct nvme_dispersed_ns_participating_nss_log *log = nvme_alloc(header_len);
 
 	if (!log)
 		return -ENOMEM;
 
-	err = nvme_get_log_dispersed_ns_participating_nss(l, nsid, header_len, log);
+	err = nvme_get_log_dispersed_ns_participating_nss(l, nsid, log, header_len);
 	if (err)
 		goto err_free;
 
@@ -10462,7 +10456,9 @@ static int get_dispersed_ns_psub(nvme_link_t l, __u32 nsid,
 	args.log = log->participating_nss,
 	args.len = psub_list_len;
 
-	err = nvme_get_log_page(l, NVME_LOG_PAGE_PDU_SIZE, &args);
+	err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 	if (err)
 		goto err_free;
 
@@ -10526,7 +10522,9 @@ static int get_log_offset(nvme_link_t l, struct nvme_get_log_args *args, __u64 *
 	*log = nvme_realloc(*log, *offset);
 	if (!*log)
 		return -ENOMEM;
-	return nvme_get_log_page(l, NVME_LOG_PAGE_PDU_SIZE, args);
+	return nvme_get_log(l, args->nsid, args->rae, args->lsp, args->lid, args->lsi, args->csi,
+						args->ot, args->uidx, args->lpo, args->log, args->len,
+						NVME_LOG_PAGE_PDU_SIZE, args->result);
 }
 
 static int get_reachability_group_desc(nvme_link_t l, struct nvme_get_log_args *args,
@@ -10565,19 +10563,17 @@ static int get_reachability_groups(nvme_link_t l, bool rgo, bool rae,
 	struct nvme_reachability_groups_log *log;
 	__u64 log_len = sizeof(*log);
 	struct nvme_get_log_args args = {
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = NVME_LOG_LID_REACHABILITY_GROUPS,
 		.nsid = NVME_NSID_ALL,
-		.lsp = rgo,
 		.rae = rae,
+		.lsp = rgo,
+		.lid = NVME_LOG_LID_REACHABILITY_GROUPS,
 	};
 
 	log = nvme_alloc(log_len);
 	if (!log)
 		return -ENOMEM;
 
-	err = nvme_get_log_reachability_groups(l, rgo, rae, log_len, log);
+	err = nvme_get_log_reachability_groups(l, rae, rgo, log, log_len);
 	if (err)
 		goto err_free;
 
@@ -10678,19 +10674,17 @@ static int get_reachability_associations(nvme_link_t l, bool rao, bool rae,
 	struct nvme_reachability_associations_log *log;
 	__u64 log_len = sizeof(*log);
 	struct nvme_get_log_args args = {
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = NVME_LOG_LID_REACHABILITY_ASSOCIATIONS,
 		.nsid = NVME_NSID_ALL,
-		.lsp = rao,
 		.rae = rae,
+		.lsp = rao,
+		.lid = NVME_LOG_LID_REACHABILITY_ASSOCIATIONS,
 	};
 
 	log = nvme_alloc(log_len);
 	if (!log)
 		return -ENOMEM;
 
-	err = nvme_get_log_reachability_associations(l, rao, rae, log_len, log);
+	err = nvme_get_log_reachability_associations(l, rae, rao, log, log_len);
 	if (err)
 		goto err_free;
 
@@ -10761,19 +10755,17 @@ static int get_host_discovery(nvme_link_t l, bool allhoste, bool rae,
 	struct nvme_host_discover_log *log;
 	__u64 log_len = sizeof(*log);
 	struct nvme_get_log_args args = {
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = NVME_LOG_LID_HOST_DISCOVER,
 		.nsid = NVME_NSID_ALL,
-		.lsp = allhoste,
 		.rae = rae,
+		.lsp = allhoste,
+		.lid = NVME_LOG_LID_HOST_DISCOVER,
 	};
 
 	log = nvme_alloc(log_len);
 	if (!log)
 		return -ENOMEM;
 
-	err = nvme_get_log_host_discover(l, allhoste, rae, log_len, log);
+	err = nvme_get_log_host_discover(l, rae, allhoste, log, log_len);
 	if (err)
 		goto err_free;
 
@@ -10843,18 +10835,16 @@ static int get_ave_discovery(nvme_link_t l, bool rae, struct nvme_ave_discover_l
 	struct nvme_ave_discover_log *log;
 	__u64 log_len = sizeof(*log);
 	struct nvme_get_log_args args = {
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = NVME_LOG_LID_AVE_DISCOVER,
 		.nsid = NVME_NSID_ALL,
 		.rae = rae,
+		.lid = NVME_LOG_LID_AVE_DISCOVER,
 	};
 
 	log = nvme_alloc(log_len);
 	if (!log)
 		return -ENOMEM;
 
-	err = nvme_get_log_ave_discover(l, rae, log_len, log);
+	err = nvme_get_log_ave_discover(l, rae, log, log_len);
 	if (err)
 		goto err_free;
 
@@ -10920,18 +10910,16 @@ static int get_pull_model_ddc_req(nvme_link_t l,
 	struct nvme_pull_model_ddc_req_log *log;
 	__u64 log_len = sizeof(*log);
 	struct nvme_get_log_args args = {
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = NVME_LOG_LID_PULL_MODEL_DDC_REQ,
 		.nsid = NVME_NSID_ALL,
 		.rae = rae,
+		.lid = NVME_LOG_LID_PULL_MODEL_DDC_REQ,
 	};
 
 	log = nvme_alloc(log_len);
 	if (!log)
 		return -ENOMEM;
 
-	err = nvme_get_log_pull_model_ddc_req(l, rae, log_len, log);
+	err = nvme_get_log_pull_model_ddc_req(l, rae, log, log_len);
 	if (err)
 		goto err_free;
 

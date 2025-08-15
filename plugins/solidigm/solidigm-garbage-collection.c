@@ -102,23 +102,23 @@ int solidigm_get_garbage_collection_log(int argc, char **argv, struct command *c
 	struct garbage_control_collection_log gc_log;
 	const int solidigm_vu_gc_log_id = 0xfd;
 	struct nvme_get_log_args args = {
-		.lpo = 0,
-		.result = NULL,
-		.log = &gc_log,
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.lid = solidigm_vu_gc_log_id,
-		.len = sizeof(gc_log),
 		.nsid = NVME_NSID_ALL,
-		.csi = NVME_CSI_NVM,
-		.lsi = NVME_LOG_LSI_NONE,
-		.lsp = NVME_LOG_LSP_NONE,
-		.uuidx = uuid_index,
 		.rae = false,
+		.lsp = NVME_LOG_LSP_NONE,
+		.lid = solidigm_vu_gc_log_id,
+		.lsi = NVME_LOG_LSI_NONE,
+		.csi = NVME_CSI_NVM,
 		.ot = false,
+		.uidx = uuid_index,
+		.lpo = 0,
+		.log = &gc_log,
+		.len = sizeof(gc_log),
+		.result = NULL,
 	};
 
-	err =  nvme_get_log(l, &args);
+	err = nvme_get_log(l, args.nsid, args.rae, args.lsp, args.lid, args.lsi, args.csi, args.ot,
+					   args.uidx, args.lpo, args.log, args.len, NVME_LOG_PAGE_PDU_SIZE,
+					   args.result);
 	if (!err) {
 		if (flags & BINARY)
 			d_raw((unsigned char *)&gc_log, sizeof(gc_log));

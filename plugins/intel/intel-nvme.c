@@ -366,8 +366,7 @@ static int get_additional_smart_log(int argc, char **argv, struct command *cmd, 
 	if (err)
 		return err;
 
-	err = nvme_get_log_simple(l, 0xca, sizeof(smart_log),
-				  &smart_log);
+	err = nvme_get_log_simple(l, 0xca, &smart_log, sizeof(smart_log));
 	if (!err) {
 		if (cfg.json)
 			show_intel_smart_log_jsn(&smart_log, cfg.namespace_id,
@@ -408,7 +407,7 @@ static int get_market_log(int argc, char **argv, struct command *cmd, struct plu
 	if (err)
 		return err;
 
-	err = nvme_get_log_simple(l, 0xdd, sizeof(log), log);
+	err = nvme_get_log_simple(l, 0xdd, log, sizeof(log));
 	if (!err) {
 		if (!cfg.raw_binary)
 			printf("Intel Marketing Name Log:\n%s\n", log);
@@ -470,7 +469,7 @@ static int get_temp_stats_log(int argc, char **argv, struct command *cmd, struct
 	if (err)
 		return err;
 
-	err = nvme_get_log_simple(l, 0xc5, sizeof(stats), &stats);
+	err = nvme_get_log_simple(l, 0xc5, &stats, sizeof(stats));
 	if (!err) {
 		if (!cfg.raw_binary)
 			show_temp_stats(&stats);
@@ -1064,7 +1063,7 @@ static int get_lat_stats_log(int argc, char **argv, struct command *cmd, struct 
 	 * Therefore, we query the longest lat_stats log page first.
 	 */
 	err = nvme_get_log_simple(l, cfg.write ? 0xc2 : 0xc1,
-				  sizeof(data), &data);
+				  &data, sizeof(data));
 
 	media_version[0] = (data[1] << 8) | data[0];
 	media_version[1] = (data[3] << 8) | data[2];
@@ -1685,7 +1684,7 @@ static int set_lat_stats_thresholds(int argc, char **argv,
 	 * matter
 	 */
 	err = nvme_get_log_simple(l, 0xc2,
-				  sizeof(media_version), media_version);
+				  media_version, sizeof(media_version));
 	if (err) {
 		fprintf(stderr, "Querying media version failed. ");
 		nvme_show_status(err);
