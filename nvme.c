@@ -59,6 +59,7 @@
 #include "nvme.h"
 #include "nvme-print.h"
 #include "plugin.h"
+#include "types.h"
 #include "util/base64.h"
 #include "util/crc32.h"
 #include "util/argconfig.h"
@@ -2717,11 +2718,12 @@ static int list_ns(int argc, char **argv, struct command *cmd, struct plugin *pl
 		return -ENOMEM;
 
 	struct nvme_identify_args args = {
-		.args_size	= sizeof(args),
-		.timeout	= nvme_cfg.timeout,
+		.nsid		= cfg.namespace_id - 1,
+		.uidx		= NVME_UUID_NONE,
 		.data		= ns_list,
-		.nsid		= cfg.namespace_id - 1.
+		.result		= NULL,
 	};
+
 	if (cfg.csi < 0) {
 		args.cns = cfg.all ? NVME_IDENTIFY_CNS_ALLOCATED_NS_LIST :
 			NVME_IDENTIFY_CNS_NS_ACTIVE_LIST;
@@ -2731,7 +2733,8 @@ static int list_ns(int argc, char **argv, struct command *cmd, struct plugin *pl
 		args.csi = cfg.csi;
 	}
 
-	err = nvme_identify(l, &args);
+	err = nvme_identify(l, args.nsid, args.cntid, args.cns, args.csi, args.cnssid,
+						args.uidx, args.data, args.result);
 	if (!err)
 		nvme_show_list_ns(ns_list, flags);
 	else if (err > 0)
@@ -3054,10 +3057,10 @@ static int parse_lba_num_si(nvme_link_t l, const char *opt,
 	int lbas;
 
 	struct nvme_identify_args args = {
-		.args_size	= sizeof(args),
-		.timeout	= nvme_cfg.timeout,
+		.nsid		= nsid - 1,
 		.cns		= NVME_IDENTIFY_CNS_NS_ACTIVE_LIST,
-		.nsid		= nsid - 1.
+		.uidx		= NVME_UUID_NONE,
+		.result		= NULL,
 	};
 
 	if (!val)
@@ -3091,7 +3094,8 @@ static int parse_lba_num_si(nvme_link_t l, const char *opt,
 	if ((ctrl->oacs & 0x8) >> 3)
 		nsid = NVME_NSID_ALL;
 	else {
-		err = nvme_identify(l, &args);
+		err = nvme_identify(l, args.nsid, args.cntid, args.cns, args.csi, args.cnssid,
+							args.uidx, args.data, args.result);
 		if (err) {
 			if (err < 0)
 				nvme_show_error("identify namespace list: %s",
