@@ -821,7 +821,7 @@ static int get_telemetry_log(int argc, char **argv, struct command *cmd,
 	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	_cleanup_fd_ int output = -1;
 	int err = 0;
-	size_t total_size;
+	size_t total_size = 0;
 	__u8 *data_ptr = NULL;
 	int data_written = 0, data_remaining = 0;
 	nvme_print_flags_t flags;
