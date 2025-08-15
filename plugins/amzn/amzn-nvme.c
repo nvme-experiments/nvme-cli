@@ -210,6 +210,7 @@ static int get_stats(int argc, char **argv, struct command *acmd,
 	struct amzn_latency_log_page log = { 0 };
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	int err, rc;
 
@@ -230,24 +231,9 @@ static int get_stats(int argc, char **argv, struct command *acmd,
 	if (rc)
 		return rc;
 
-	struct nvme_get_log_args args = {
-		.args_size = sizeof(args),
-		.lid = AMZN_NVME_STATS_LOGPAGE_ID,
-		.nsid = 1,
-		.lpo = 0,
-		.lsp = NVME_LOG_LSP_NONE,
-		.lsi = 0,
-		.rae = false,
-		.uuidx = 0,
-		.csi = NVME_CSI_NVM,
-		.ot = false,
-		.len = sizeof(log),
-		.log = &log,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = NULL,
-	};
-
-	rc = nvme_get_log(hdl, &args);
+	nvme_init_get_log(&cmd, 1, AMZN_NVME_STATS_LOGPAGE_ID, NVME_CSI_NVM,
+			  &log, sizeof(log));
+	err = nvme_get_log(hdl, &cmd, false, NVME_LOG_PAGE_PDU_SIZE, NULL);
 	if (rc != 0) {
 		fprintf(stderr, "[ERROR] %s: Failed to get log page, rc = %d",
 			__func__, rc);

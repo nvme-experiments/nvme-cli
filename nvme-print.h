@@ -3,6 +3,7 @@
 #define NVME_PRINT_H
 
 #include "nvme.h"
+#include "types.h"
 #include <inttypes.h>
 
 #include <ccan/list/list.h>
