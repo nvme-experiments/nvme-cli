@@ -8654,21 +8654,8 @@ static int sec_recv(int argc, char **argv, struct command *cmd, struct plugin *p
 			return -ENOMEM;
 	}
 
-	struct nvme_security_receive_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.nssf		= cfg.nssf,
-		.spsp0		= cfg.spsp & 0xff,
-		.spsp1		= cfg.spsp >> 8,
-		.secp		= cfg.secp,
-		.al		= cfg.al,
-		.data_len	= cfg.size,
-		.data		= sec_buf,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-
-	err = nvme_security_receive(l, &args);
+	err = nvme_security_receive(l, cfg.namespace_id, cfg.nssf, cfg.spsp & 0xff, cfg.spsp >> 8,
+				    cfg.secp, cfg.al, sec_buf, cfg.size, NULL);
 	if (err < 0) {
 		nvme_show_error("security receive: %s", nvme_strerror(-err));
 	} else if (err != 0) {
