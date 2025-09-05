@@ -8734,18 +8734,8 @@ static int get_lba_status(int argc, char **argv, struct command *cmd,
 	if (!buf)
 		return -ENOMEM;
 
-	struct nvme_get_lba_status_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.slba		= cfg.slba,
-		.mndw		= cfg.mndw,
-		.rl		= cfg.rl,
-		.atype		= cfg.atype,
-		.lbas		= buf,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_get_lba_status(l, &args);
+	err = nvme_get_lba_status(l, cfg.namespace_id, cfg.slba, cfg.mndw, cfg.atype, cfg.rl, buf,
+				  NULL);
 	if (!err)
 		nvme_show_lba_status(buf, buf_len, flags);
 	else if (err > 0)
