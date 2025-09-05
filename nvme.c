@@ -8951,7 +8951,7 @@ static int lockdown_cmd(int argc, char **argv, struct command *cmd, struct plugi
 		__u8	ifc;
 		__u8	prhbt;
 		__u8	scp;
-		__u8	uuid;
+		__u8	uidx;
 	};
 
 	struct config cfg = {
@@ -8959,7 +8959,7 @@ static int lockdown_cmd(int argc, char **argv, struct command *cmd, struct plugi
 		.ifc	= 0,
 		.prhbt	= 0,
 		.scp	= 0,
-		.uuid	= 0,
+		.uidx	= 0,
 	};
 
 	NVME_ARGS(opts,
@@ -8967,7 +8967,7 @@ static int lockdown_cmd(int argc, char **argv, struct command *cmd, struct plugi
 		  OPT_BYTE("ifc",	'f', &cfg.ifc,      ifc_desc),
 		  OPT_BYTE("prhbt",	'p', &cfg.prhbt,    prhbt_desc),
 		  OPT_BYTE("scp",	's', &cfg.scp,      scp_desc),
-		  OPT_BYTE("uuid",	'U', &cfg.uuid,     uuid_desc));
+		  OPT_BYTE("uuid",	'U', &cfg.uidx,     uuid_desc));
 
 	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
@@ -8986,22 +8986,12 @@ static int lockdown_cmd(int argc, char **argv, struct command *cmd, struct plugi
 		nvme_show_error("invalid scope settings:%d", cfg.scp);
 		return -1;
 	}
-	if (cfg.uuid > 127) {
-		nvme_show_error("invalid UUID index settings:%d", cfg.uuid);
+	if (cfg.uidx > 127) {
+		nvme_show_error("invalid UUID index settings:%d", cfg.uidx);
 		return -1;
 	}
 
-	struct nvme_lockdown_args args = {
-		.args_size	= sizeof(args),
-		.scp		= cfg.scp,
-		.prhbt		= cfg.prhbt,
-		.ifc		= cfg.ifc,
-		.ofi		= cfg.ofi,
-		.uuidx		= cfg.uuid,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_lockdown(l, &args);
+	err = nvme_lockdown(l, cfg.scp, cfg.prhbt, cfg.ifc, cfg.ofi, cfg.uidx, NULL);
 	if (err < 0)
 		nvme_show_error("lockdown: %s", nvme_strerror(-err));
 	else if (err > 0)
