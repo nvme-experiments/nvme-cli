@@ -4329,16 +4329,7 @@ static int virtual_mgmt(int argc, char **argv, struct command *cmd, struct plugi
 	if (err)
 		return err;
 
-	struct nvme_virtual_mgmt_args args = {
-		.args_size	= sizeof(args),
-		.act		= cfg.act,
-		.rt		= cfg.rt,
-		.cntlid		= cfg.cntlid,
-		.nr		= cfg.nr,
-		.timeout	= nvme_cfg.timeout,
-		.result		= &result,
-	};
-	err = nvme_virtual_mgmt(l, &args);
+	err = nvme_virtual_mgmt(l, cfg.act, cfg.rt, cfg.cntlid, cfg.nr, &result);
 	if (!err)
 		printf("success, Number of Controller Resources Modified (NRM):%#x\n", result);
 	else if (err > 0)
