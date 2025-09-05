@@ -8790,16 +8790,7 @@ static int capacity_mgmt(int argc, char **argv, struct command *cmd, struct plug
 		return -1;
 	}
 
-	struct nvme_capacity_mgmt_args args = {
-		.args_size	= sizeof(args),
-		.op		= cfg.operation,
-		.element_id	= cfg.element_id,
-		.cdw11		= cfg.dw11,
-		.cdw12		= cfg.dw12,
-		.timeout	= nvme_cfg.timeout,
-		.result		= &result,
-	};
-	err = nvme_capacity_mgmt(l, &args);
+	err = nvme_capacity_mgmt(l, cfg.operation, cfg.element_id, cfg.dw11, cfg.dw12, &result);
 	if (!err) {
 		printf("Capacity Management Command is Success\n");
 		if (cfg.operation == 1)
