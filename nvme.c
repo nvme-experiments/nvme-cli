@@ -4543,13 +4543,11 @@ static int wait_self_test(nvme_link_t l)
 	return 0;
 }
 
-static void abort_self_test(nvme_link_t l, struct nvme_dev_self_test_args *args)
+static void abort_self_test(nvme_link_t l, __u32 nsid)
 {
 	int err;
 
-	args->stc = NVME_DST_STC_ABORT;
-
-	err = nvme_dev_self_test(l, args);
+	err = nvme_dev_self_test(l, nsid, NVME_DST_STC_ABORT, NULL);
 	if (!err)
 		printf("Aborting device self-test operation\n");
 	else if (err > 0)
@@ -4634,14 +4632,7 @@ static int device_self_test(int argc, char **argv, struct command *cmd, struct p
 		goto check_abort;
 	}
 
-	struct nvme_dev_self_test_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.stc		= cfg.stc,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_dev_self_test(l, &args);
+	err = nvme_dev_self_test(l, cfg.namespace_id, cfg.stc, NULL);
 	if (!err) {
 		if (cfg.stc == NVME_ST_CODE_ABORT)
 			printf("Aborting device self-test operation\n");
@@ -4662,7 +4653,7 @@ static int device_self_test(int argc, char **argv, struct command *cmd, struct p
 
 check_abort:
 	if (err == -EINTR)
-		abort_self_test(l, &args);
+		abort_self_test(l, cfg.namespace_id);
 
 	return err;
 }
