@@ -13,6 +13,7 @@ SYNOPSIS
 			[--element-id=<element-id> | -i <element-id>]
 			[--cap-lower=<cap-lower> | -l <cap-lower>]
 			[--cap-upper=<cap-upper> | -u <cap-upper>]
+			[--cap=<cap> | -c <cap>]
 			[--output-format=<fmt> | -o <fmt>] [--verbose | -v]
 			[--timeout=<timeout> | -t <timeout>]
 
@@ -46,6 +47,11 @@ OPTIONS
 --cap-upper=<cap-upper>::
 	Most significant 32 bits of the capacity in bytes of the Endurance Group or
 	NVM Set to be created
+
+-c <cap>::
+--cap=<cap>::
+	The capacity in bytes of the Endurance Group or NVM Set to be created.
+	Can't be used together with --cap--lower/--cap-upper.
 
 -o <fmt>::
 --output-format=<fmt>::

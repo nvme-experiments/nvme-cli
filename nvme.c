@@ -8749,6 +8749,8 @@ static int capacity_mgmt(int argc, char **argv, struct command *cmd, struct plug
 	    "Least significant 32 bits of the capacity in bytes of the Endurance Group or NVM Set to be created";
 	const char *cap_upper =
 	    "Most significant 32 bits of the capacity in bytes of the Endurance Group or NVM Set to be created";
+	const char *cap =
+	    "Capacity in bytes of the Endurance Group or NVM Set to be created";
 
 	_cleanup_nvme_root_ nvme_root_t r = NULL;
 	_cleanup_nvme_link_ nvme_link_t l = NULL;
@@ -8759,22 +8761,26 @@ static int capacity_mgmt(int argc, char **argv, struct command *cmd, struct plug
 	struct config {
 		__u8	operation;
 		__u16	element_id;
-		__u32	dw11;
-		__u32	dw12;
+		__u32   capl;
+		__u32   capu;
+		__u64   cap;
 	};
 
 	struct config cfg = {
 		.operation	= 0xff,
 		.element_id	= 0xffff,
-		.dw11		= 0,
-		.dw12		= 0,
+		.capl		= 0,
+		.capu		= 0,
+		.cap		= 0,
 	};
 
 	NVME_ARGS(opts,
 		  OPT_BYTE("operation",   'O', &cfg.operation,    operation),
 		  OPT_SHRT("element-id",  'i', &cfg.element_id,   element_id),
-		  OPT_UINT("cap-lower",   'l', &cfg.dw11,         cap_lower),
-		  OPT_UINT("cap-upper",   'u', &cfg.dw12,         cap_upper));
+		  OPT_UINT("cap-lower",   'l', &cfg.capl,         cap_lower),
+		  OPT_UINT("cap-upper",   'u', &cfg.capu,         cap_upper),
+		  OPT_LONG("cap",         'c', &cfg.cap,          cap)
+		);
 
 
 	err = parse_and_open(&r, &l, argc, argv, desc, opts);
@@ -8792,16 +8798,17 @@ static int capacity_mgmt(int argc, char **argv, struct command *cmd, struct plug
 		return -1;
 	}
 
-	struct nvme_capacity_mgmt_args args = {
-		.args_size	= sizeof(args),
-		.op		= cfg.operation,
-		.element_id	= cfg.element_id,
-		.cdw11		= cfg.dw11,
-		.cdw12		= cfg.dw12,
-		.timeout	= nvme_cfg.timeout,
-		.result		= &result,
-	};
-	err = nvme_capacity_mgmt(l, &args);
+	if ((cfg.capl || cfg.capu) && cfg.cap) {
+		nvme_show_error("use either capl/capu or cap\n");
+		return -1;
+	}
+
+	if (cfg.capl || cfg.capu)
+		cfg.cap = cfg.capu << 32 | cfg.capl;
+
+
+	err = nvme_capacity_mgmt(l, cfg.operation, cfg.element_id,
+				 cfg.cap, &result);
 	if (!err) {
 		printf("Capacity Management Command is Success\n");
 		if (cfg.operation == 1)
