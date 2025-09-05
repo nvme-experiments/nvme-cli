@@ -5986,16 +5986,9 @@ static int get_register(int argc, char **argv, struct command *cmd, struct plugi
 
 static int nvme_set_single_property(nvme_link_t l, int offset, uint64_t value)
 {
-	struct nvme_set_property_args args = {
-		.args_size	= sizeof(args),
-		.offset		= offset,
-		.value		= value,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
 	int err;
 
-	err = nvme_set_property(l, &args);
+	err = nvme_set_property(l, offset, value, NULL);
 	if (err < 0)
 		nvme_show_error("set-property: %s", nvme_strerror(-err));
 	else if (!err)
