@@ -7041,19 +7041,9 @@ static int dir_send(int argc, char **argv, struct command *cmd, struct plugin *p
 		}
 	}
 
-	struct nvme_directive_send_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.dspec		= cfg.dspec,
-		.doper		= cfg.doper,
-		.dtype		= cfg.dtype,
-		.cdw12		= dw12,
-		.data_len	= cfg.data_len,
-		.data		= buf,
-		.timeout	= nvme_cfg.timeout,
-		.result		= &result,
-	};
-	err = nvme_directive_send(l, &args);
+	err = nvme_directive_send(l, cfg.namespace_id, cfg.doper,
+				  cfg.dtype, cfg.dspec, dw12, buf,
+				  cfg.data_len, &result);
 	if (err < 0) {
 		nvme_show_error("dir-send: %s", nvme_strerror(-err));
 		return err;
