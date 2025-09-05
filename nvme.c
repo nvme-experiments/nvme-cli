@@ -1068,13 +1068,7 @@ static int get_effects_log(int argc, char **argv, struct command *cmd, struct pl
 			cap = mmio_read64(bar + NVME_REG_CAP);
 			munmap(bar, getpagesize());
 		} else {
-			struct nvme_get_property_args args = {
-				.args_size	= sizeof(args),
-				.offset		= NVME_REG_CAP,
-				.value		= &cap,
-				.timeout	= nvme_cfg.timeout,
-			};
-			err = nvme_get_property(l, &args);
+			err = nvme_get_property(l, NVME_REG_CAP, &cap);
 			if (err)
 				goto cleanup_list;
 		}
@@ -5538,14 +5532,8 @@ static int sanitize_cmd(int argc, char **argv, struct command *cmd, struct plugi
 static int nvme_get_single_property(nvme_link_t l, struct get_reg_config *cfg, __u64 *value)
 {
 	int err;
-	struct nvme_get_property_args args = {
-		.args_size	= sizeof(args),
-		.offset		= cfg->offset,
-		.value		= value,
-		.timeout	= nvme_cfg.timeout,
-	};
 
-	err = nvme_get_property(l, &args);
+	err = nvme_get_property(l, cfg->offset, value);
 	if (!err)
 		return 0;
 
@@ -5775,11 +5763,6 @@ static int get_register_properties(nvme_link_t l, void **pbar, struct get_reg_co
 	int size;
 	int err;
 	void *bar;
-	struct nvme_get_property_args args = {
-		.args_size = sizeof(args),
-		.value = &value,
-		.timeout = nvme_cfg.timeout,
-	};
 
 	size = offset + get_reg_size(offset);
 	bar = malloc(size);
@@ -5791,8 +5774,7 @@ static int get_register_properties(nvme_link_t l, void **pbar, struct get_reg_co
 		    !nvme_is_fabrics_reg(offset))
 			continue;
 
-		args.offset = offset;
-		err = nvme_get_property(l, &args);
+		err = nvme_get_property(l, offset, &value);
 		if (nvme_status_equals(err, NVME_STATUS_TYPE_NVME, NVME_SC_INVALID_FIELD)) {
 			value = -1;
 		} else if (err) {
