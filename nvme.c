@@ -8910,19 +8910,8 @@ static int dir_receive(int argc, char **argv, struct command *cmd, struct plugin
 			return -ENOMEM;
 	}
 
-	struct nvme_directive_recv_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.dspec		= cfg.dspec,
-		.doper		= cfg.doper,
-		.dtype		= cfg.dtype,
-		.cdw12		= dw12,
-		.data_len	= cfg.data_len,
-		.data		= buf,
-		.timeout	= nvme_cfg.timeout,
-		.result		= &result,
-	};
-	err = nvme_directive_recv(l, &args);
+	err = nvme_directive_recv(l, cfg.namespace_id, cfg.doper, cfg.dtype, cfg.dspec, dw12, buf,
+				  cfg.data_len, &result);
 	if (!err)
 		nvme_directive_show(cfg.dtype, cfg.doper, cfg.dspec, cfg.namespace_id,
 				    result, buf, cfg.data_len, flags);
