@@ -5508,19 +5508,8 @@ static int sanitize_cmd(int argc, char **argv, struct command *cmd, struct plugi
 		}
 	}
 
-	struct nvme_sanitize_nvm_args args = {
-		.args_size	= sizeof(args),
-		.sanact		= cfg.sanact,
-		.ause		= cfg.ause,
-		.owpass		= cfg.owpass,
-		.oipbp		= cfg.oipbp,
-		.nodas		= cfg.no_dealloc,
-		.ovrpat		= cfg.ovrpat,
-		.result		= NULL,
-		.emvs		= cfg.emvs,
-	};
-
-	err = nvme_sanitize_nvm(l, &args);
+	err = nvme_sanitize_nvm(l, cfg.sanact, cfg.ause, cfg.owpass, cfg.oipbp, cfg.no_dealloc,
+				cfg.emvs, cfg.ovrpat, NULL);
 	if (err < 0)
 		nvme_show_error("sanitize: %s", nvme_strerror(-err));
 	else if (err > 0)
