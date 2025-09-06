@@ -7137,6 +7137,7 @@ static int write_zeroes(int argc, char **argv, struct command *cmd, struct plugi
 	__u8 sts = 0, pif = 0;
 	__u16 control = 0;
 	__u32 result = 0;
+	bool elbas;
 	int err;
 
 	const char *desc =
@@ -7258,24 +7259,15 @@ static int write_zeroes(int argc, char **argv, struct command *cmd, struct plugi
 	if (invalid_tags(cfg.storage_tag, cfg.ref_tag, sts, pif))
 		return -EINVAL;
 
-	struct nvme_io_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.slba		= cfg.start_block,
-		.nlb		= cfg.block_count,
-		.control	= control,
-		.reftag		= (__u32)cfg.ref_tag,
-		.reftag_u64	= cfg.ref_tag,
-		.apptag		= cfg.app_tag,
-		.appmask	= cfg.app_tag_mask,
-		.sts		= sts,
-		.pif		= pif,
-		.storage_tag	= cfg.storage_tag,
-		.dspec		= cfg.dspec,
-		.timeout	= nvme_cfg.timeout,
-		.result		= &result,
-	};
-	err = nvme_write_zeros(l, &args);
+	elbas = argconfig_parse_seen(opts, "sts") ||
+		argconfig_parse_seen(opts, "pif");
+
+	err = nvme_write_zeros(l, cfg.namespace_id, cfg.start_block,
+			       cfg.block_count, control,
+			       cfg.dspec, 0, 0,
+			       elbas, sts, pif, cfg.storage_tag, cfg.ref_tag,
+			       cfg.app_tag, cfg.app_tag_mask,
+			       &result);
 	if (err < 0)
 		nvme_show_error("write-zeroes: %s", nvme_strerror(-err));
 	else if (err != 0)
