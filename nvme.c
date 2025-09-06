@@ -8028,7 +8028,8 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 	int flags, pi_size;
 	int mode = 0644;
 	__u16 control = 0, nblocks = 0;
-	__u32 dsmgmt = 0;
+	__u32 dsmgmt = 0, cdw12, cdw13;
+	bool elbas;
 	unsigned int logical_block_size = 0;
 	unsigned long long buffer_size = 0, mbuffer_size = 0;
 	_cleanup_huge_ struct nvme_mem_huge mh = { 0, };
@@ -8320,30 +8321,22 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 	if (nvme_cfg.dry_run)
 		return 0;
 
-	struct nvme_io_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.slba		= cfg.start_block,
-		.nlb		= nblocks,
-		.control	= control,
-		.dsm		= cfg.dsmgmt,
-		.sts		= sts,
-		.pif		= pif,
-		.dspec		= cfg.dspec,
-		.reftag		= (__u32)cfg.ref_tag,
-		.reftag_u64	= cfg.ref_tag,
-		.apptag		= cfg.app_tag,
-		.appmask	= cfg.app_tag_mask,
-		.storage_tag	= cfg.storage_tag,
-		.data_len	= buffer_size,
-		.data		= buffer,
-		.metadata_len	= mbuffer_size,
-		.metadata	= mbuffer,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
+	elbas = argconfig_parse_seen(opts, "sts") ||
+		argconfig_parse_seen(opts, "pif");
+
+	cdw12 = NVME_SET(nlbocks, IOCS_COMMON_CDW12_NLB) |
+		NVME_SET(control, IOCS_COMMON_CDW12_CONTROL);
+	cdw13 = NVME_SET(cfg.dspec, IOCS_COMMON_CDW13_DSPEC) |
+		NVME_SET(cfg.dsmgmt, IOCS_COMMON_CDW13_DSM);
+
 	gettimeofday(&start_time, NULL);
-	err = nvme_io(l, &args, opcode);
+	err = nvme_io(l, opcode, cfg.namespace_id, cfg.start_block,
+		      cdw12, cdw13,
+		      elbas, sts, pif, cfg.storage_tag, cfg.ref_tag,
+		      cfg.app_tag, cfg.app_tag_mask,
+		      buffer, buffer_size,
+		      mbuffer, mbuffer_size,
+		      NULL);
 	gettimeofday(&end_time, NULL);
 	if (cfg.latency)
 		printf(" latency: %s: %llu us\n", command, elapsed_utime(start_time, end_time));
