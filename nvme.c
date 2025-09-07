@@ -7060,17 +7060,10 @@ static int write_uncor(int argc, char **argv, struct command *cmd, struct plugin
 		return -EINVAL;
 	}
 
-	struct nvme_io_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.slba		= cfg.start_block,
-		.nlb		= cfg.block_count,
-		.control	= cfg.dtype << 4,
-		.dspec		= cfg.dspec,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_write_uncorrectable(l, &args);
+	err = nvme_write_uncorrectable(l, cfg.namespace_id, cfg.start_block,
+				       cfg.block_count, cfg.dtype << 4,
+				       cfg.dspec,
+				       NULL);
 	if (err < 0)
 		nvme_show_error("write uncorrectable: %s", nvme_strerror(-err));
 	else if (err != 0)
