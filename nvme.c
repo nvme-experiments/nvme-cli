@@ -8381,6 +8381,7 @@ static int verify_cmd(int argc, char **argv, struct command *cmd, struct plugin 
 	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	__u8 sts = 0, pif = 0;
 	__u16 control = 0;
+	bool elbas;
 	int err;
 
 	const char *desc = "Verify specified logical blocks on the given device.";
@@ -8396,7 +8397,7 @@ static int verify_cmd(int argc, char **argv, struct command *cmd, struct plugin 
 		bool	limited_retry;
 		bool	force_unit_access;
 		__u8	prinfo;
-		__u32	ref_tag;
+		__u64	ref_tag;
 		__u16	app_tag;
 		__u16	app_tag_mask;
 		__u64	storage_tag;
@@ -8480,23 +8481,15 @@ static int verify_cmd(int argc, char **argv, struct command *cmd, struct plugin 
 	if (invalid_tags(cfg.storage_tag, cfg.ref_tag, sts, pif))
 		return -EINVAL;
 
-	struct nvme_io_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.slba		= cfg.start_block,
-		.nlb		= cfg.block_count,
-		.control	= control,
-		.reftag		= cfg.ref_tag,
-		.reftag_u64	= cfg.ref_tag,
-		.apptag		= cfg.app_tag,
-		.appmask	= cfg.app_tag_mask,
-		.sts		= sts,
-		.pif		= pif,
-		.storage_tag	= cfg.storage_tag,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_verify(l, &args);
+	elbas = argconfig_parse_seen(opts, "sts") ||
+		argconfig_parse_seen(opts, "pif");
+
+	err = nvme_verify(l, cfg.namespace_id, cfg.start_block,
+			  cfg.block_count, control,
+			  0,
+			  elbas, sts, pif, cfg.storage_tag, cfg.ref_tag,
+			  cfg.app_tag, cfg.app_tag_mask,
+			  NULL);
 	if (err < 0)
 		nvme_show_error("verify: %s", nvme_strerror(-err));
 	else if (err != 0)
