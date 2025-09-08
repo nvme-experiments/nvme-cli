@@ -8522,23 +8522,9 @@ static int verify_cmd(int argc, char **argv, struct command *cmd, struct plugin 
 	if (invalid_tags(cfg.storage_tag, cfg.ref_tag, sts, pif))
 		return -EINVAL;
 
-	struct nvme_io_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.slba		= cfg.start_block,
-		.nlb		= cfg.block_count,
-		.control	= control,
-		.reftag		= cfg.ref_tag,
-		.reftag_u64	= cfg.ref_tag,
-		.apptag		= cfg.app_tag,
-		.appmask	= cfg.app_tag_mask,
-		.sts		= sts,
-		.pif		= pif,
-		.storage_tag	= cfg.storage_tag,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_verify(l, &args);
+	err = nvme_verify(l, cfg.namespace_id, cfg.start_block, cfg.storage_tag, cfg.ref_tag,
+			  cfg.block_count, control, cfg.app_tag, cfg.app_tag_mask, cfg.ref_tag, sts,
+			  pif, NULL);
 	if (err < 0)
 		nvme_show_error("verify: %s", nvme_strerror(-err));
 	else if (err != 0)
