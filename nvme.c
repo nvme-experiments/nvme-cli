@@ -7760,18 +7760,10 @@ static int resv_register(int argc, char **argv, struct command *cmd, struct plug
 		return -EINVAL;
 	}
 
-	struct nvme_resv_register_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.rrega		= cfg.rrega,
-		.cptpl		= cfg.cptpl,
-		.iekey		= !!cfg.iekey,
-		.crkey		= cfg.crkey,
-		.nrkey		= cfg.nrkey,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_resv_register(l, &args);
+	err = nvme_resv_register(l, cfg.namespace_id, cfg.rrega,
+				 cfg.iekey, 0, cfg.cptpl,
+				 cfg.crkey, cfg.nrkey,
+				 NULL);
 	if (err < 0)
 		nvme_show_error("reservation register: %s", nvme_strerror(-err));
 	else if (err != 0)
