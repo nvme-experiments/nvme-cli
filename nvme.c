@@ -7608,26 +7608,9 @@ static int copy_cmd(int argc, char **argv, struct command *cmd, struct plugin *p
 		nvme_init_copy_range_f3(copy->f3, snsids, nlbs, slbas, sopts, eilbrts.long_pi, elbatms,
 					elbats, nr);
 
-	struct nvme_copy_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.copy		= copy->f0,
-		.sdlba		= cfg.sdlba,
-		.nr		= nr,
-		.prinfor	= cfg.prinfor,
-		.prinfow	= cfg.prinfow,
-		.dtype		= cfg.dtype,
-		.dspec		= cfg.dspec,
-		.format		= cfg.format,
-		.lr		= cfg.lr,
-		.fua		= cfg.fua,
-		.ilbrt_u64	= cfg.ilbrt,
-		.lbatm		= cfg.lbatm,
-		.lbat		= cfg.lbat,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_copy(l, &args);
+	err = nvme_copy(l, cfg.namespace_id, cfg.sdlba, cfg.lr, cfg.fua, cfg.dspec, cfg.lbatm,
+			cfg.lbat, cfg.prinfor, cfg.prinfow, cfg.dtype, cfg.format, cfg.ilbrt,
+			copy->f0, nr, NULL);
 	if (err < 0)
 		nvme_show_error("NVMe Copy: %s", nvme_strerror(-err));
 	else if (err != 0)
