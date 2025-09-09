@@ -736,19 +736,10 @@ static int zone_mgmt_recv(int argc, char **argv, struct command *cmd, struct plu
 		}
 	}
 
-	struct nvme_zns_mgmt_recv_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.slba		= cfg.zslba,
-		.zra		= cfg.zra,
-		.zrasf		= cfg.zrasf,
-		.zras_feat	= cfg.partial,
-		.data_len	= cfg.data_len,
-		.data		= data,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result		= NULL,
-	};
-	err = nvme_zns_mgmt_recv(l, &args);
+	err = nvme_zns_mgmt_recv(l, cfg.namespace_id, cfg.zslba,
+				 cfg.zra, 0,
+				 cfg.zrasf, data, cfg.data_len,
+				 NULL);
 	if (!err)
 		printf("zone-mgmt-recv: Success, action:%d zone:%"PRIx64" nsid:%d\n",
 		       cfg.zra, (uint64_t)cfg.zslba, cfg.namespace_id);
