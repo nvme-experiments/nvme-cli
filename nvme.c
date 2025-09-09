@@ -7928,16 +7928,8 @@ static int resv_report(int argc, char **argv, struct command *cmd, struct plugin
 	if (!status)
 		return -ENOMEM;
 
-	struct nvme_resv_report_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.eds		= cfg.eds,
-		.len		= size,
-		.report		= status,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_resv_report(l, &args);
+	err = nvme_resv_report(l, cfg.namespace_id, cfg.eds, false,
+			       status, size, NULL);
 	if (!err)
 		nvme_show_resv_report(status, size, cfg.eds, flags);
 	else if (err > 0)
