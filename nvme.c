@@ -7368,16 +7368,8 @@ static int dsm(int argc, char **argv, struct command *cmd, struct plugin *plugin
 		return -ENOMEM;
 
 	nvme_init_dsm_range(dsm, ctx_attrs, nlbs, slbas, nr);
-	struct nvme_dsm_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.attrs		= cfg.cdw11,
-		.nr_ranges	= nr,
-		.dsm		= dsm,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_dsm(l, &args);
+
+	err = nvme_dsm(l, cfg.namespace_id, nr, cfg.cdw11, dsm,  NULL);
 	if (err < 0)
 		nvme_show_error("data-set management: %s", nvme_strerror(-err));
 	else if (err != 0)
