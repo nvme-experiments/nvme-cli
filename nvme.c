@@ -2148,17 +2148,7 @@ static int io_mgmt_send(int argc, char **argv, struct command *cmd, struct plugi
 		return err;
 	}
 
-	struct nvme_io_mgmt_send_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.mos		= cfg.mos,
-		.mo		= cfg.mo,
-		.data_len	= cfg.data_len,
-		.data		= buf,
-		.timeout	= nvme_cfg.timeout,
-	};
-
-	err = nvme_io_mgmt_send(l, &args);
+	err = nvme_io_mgmt_send(l, cfg.namespace_id, cfg.mos, cfg.mo, buf, cfg.data_len, NULL);
 	if (!err)
 		printf("io-mgmt-send: Success, mos:%u mo:%u nsid:%d\n",
 			cfg.mos, cfg.mo, cfg.namespace_id);
