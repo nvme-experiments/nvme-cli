@@ -7834,17 +7834,9 @@ static int resv_release(int argc, char **argv, struct command *cmd, struct plugi
 		return -EINVAL;
 	}
 
-	struct nvme_resv_release_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.rtype		= cfg.rtype,
-		.rrela		= cfg.rrela,
-		.iekey		= !!cfg.iekey,
-		.crkey		= cfg.crkey,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_resv_release(l, &args);
+	err = nvme_resv_release(l, cfg.namespace_id, cfg.rrela,
+				cfg.iekey, false, cfg.rtype,
+				cfg.crkey, NULL);
 	if (err < 0)
 		nvme_show_error("reservation release: %s", nvme_strerror(-err));
 	else if (err != 0)
