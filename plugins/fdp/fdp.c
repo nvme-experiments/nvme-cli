@@ -416,7 +416,7 @@ static int fdp_update(int argc, char **argv, struct command *cmd, struct plugin 
 	for (unsigned int i = 0; i < npids; i++)
 		buf[i] = cpu_to_le16(pids[i]);
 
-	err = nvme_fdp_reclaim_unit_handle_update(l, cfg.namespace_id, npids, buf);
+	err = nvme_fdp_reclaim_unit_handle_update(l, cfg.namespace_id, buf, npids, NULL);
 	if (err) {
 		nvme_show_status(err);
 		return err;
