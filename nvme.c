@@ -2212,17 +2212,8 @@ static int io_mgmt_recv(int argc, char **argv, struct command *cmd, struct plugi
 			return -ENOMEM;
 	}
 
-	struct nvme_io_mgmt_recv_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.mos		= cfg.mos,
-		.mo		= cfg.mo,
-		.data_len	= cfg.data_len,
-		.data		= buf,
-		.timeout	= nvme_cfg.timeout,
-	};
-
-	err = nvme_io_mgmt_recv(l, &args);
+	err = nvme_io_mgmt_recv(l, cfg.namespace_id, cfg.mo,
+				cfg.mos, buf, cfg.data_len, NULL);
 	if (!err) {
 		printf("io-mgmt-recv: Success, mos:%u mo:%u nsid:%d\n",
 			cfg.mos, cfg.mo, cfg.namespace_id);
