@@ -339,8 +339,7 @@ static int fdp_status(int argc, char **argv, struct command *cmd, struct plugin 
 		}
 	}
 
-	err = nvme_fdp_reclaim_unit_handle_status(l,
-			cfg.namespace_id, sizeof(hdr), &hdr);
+	err = nvme_fdp_reclaim_unit_handle_status(l, cfg.namespace_id, &hdr, sizeof(hdr), NULL);
 	if (err) {
 		nvme_show_status(err);
 		return err;
@@ -352,8 +351,7 @@ static int fdp_status(int argc, char **argv, struct command *cmd, struct plugin 
 	if (!buf)
 		return -ENOMEM;
 
-	err = nvme_fdp_reclaim_unit_handle_status(l,
-			cfg.namespace_id, len, buf);
+	err = nvme_fdp_reclaim_unit_handle_status(l, cfg.namespace_id, buf, len, NULL);
 	if (err) {
 		nvme_show_status(err);
 		return err;
