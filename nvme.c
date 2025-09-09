@@ -7680,18 +7680,10 @@ static int resv_acquire(int argc, char **argv, struct command *cmd, struct plugi
 		return -EINVAL;
 	}
 
-	struct nvme_resv_acquire_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.rtype		= cfg.rtype,
-		.racqa		= cfg.racqa,
-		.iekey		= !!cfg.iekey,
-		.crkey		= cfg.crkey,
-		.nrkey		= cfg.prkey,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_resv_acquire(l, &args);
+	err = nvme_resv_acquire(l, cfg.namespace_id, cfg.racqa,
+				cfg.iekey, false ,cfg.rtype,
+				cfg.crkey, cfg.prkey,
+				NULL);
 	if (err < 0)
 		nvme_show_error("reservation acquire: %s", nvme_strerror(-err));
 	else if (err != 0)
