@@ -3370,7 +3370,7 @@ parse_lba:
 	for (i = 0; i < num_phandle; i++)
 		data->phndl[i] = cpu_to_le16(phndl[i]);
 
-	err = nvme_ns_mgmt_create(l, NULL, &nsid, nvme_cfg.timeout, cfg.csi, data);
+	err = nvme_ns_mgmt_create(l, cfg.csi, data, &nsid);
 	ns_mgmt_show_status(l, err, cmd->name, nsid);
 
 	return err;
