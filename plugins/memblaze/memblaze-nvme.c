@@ -880,16 +880,7 @@ static int mb_selective_download(int argc, char **argv, struct command *cmd, str
 
 	while (fw_size > 0) {
 		xfer = min(xfer, fw_size);
-
-		struct nvme_fw_download_args args = {
-			.args_size	= sizeof(args),
-			.offset		= offset,
-			.data_len	= xfer,
-			.data		= fw_buf,
-			.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
-			.result		= NULL,
-		};
-		err = nvme_fw_download(l, &args);
+		err = nvme_fw_download(l, fw_buf, xfer, offset, NULL);
 		if (err < 0) {
 			perror("fw-download");
 			goto out_free;
