@@ -5188,8 +5188,8 @@ static int fw_commit(int argc, char **argv, struct command *cmd, struct plugin *
 		"reset following firmware activation. A reset may be issued "
 		"with an 'echo 1 > /sys/class/nvme/nvmeX/reset_controller'. "
 		"Ensure nvmeX is the device you just activated before reset.";
-	const char *slot = "[0-7]: firmware slot for commit action";
-	const char *action = "[0-7]: commit action";
+	const char *fs = "[0-7]: firmware slot for commit action";
+	const char *ca = "[0-7]: commit action";
 	const char *bpid = "[0,1]: boot partition identifier, if applicable (default: 0)";
 
 	_cleanup_nvme_root_ nvme_root_t r = NULL;
@@ -5199,21 +5199,21 @@ static int fw_commit(int argc, char **argv, struct command *cmd, struct plugin *
 	nvme_print_flags_t flags;
 
 	struct config {
-		__u8	slot;
-		__u8	action;
+		__u8	fs;
+		__u8	ca;
 		__u8	bpid;
 	};
 
 	struct config cfg = {
-		.slot	= 0,
-		.action	= 0,
+		.fs	= 0,
+		.ca	= 0,
 		.bpid	= 0,
 	};
 
 	NVME_ARGS(opts,
-		  OPT_BYTE("slot",   's', &cfg.slot,   slot),
-		  OPT_BYTE("action", 'a', &cfg.action, action),
-		  OPT_BYTE("bpid",   'b', &cfg.bpid,   bpid));
+		  OPT_BYTE("slot",   's', &cfg.fs,   fs),
+		  OPT_BYTE("action", 'a', &cfg.ca,   ca),
+		  OPT_BYTE("bpid",   'b', &cfg.bpid, bpid));
 
 	err = parse_and_open(&r, &l, argc, argv, desc, opts);
 	if (err)
@@ -5225,12 +5225,12 @@ static int fw_commit(int argc, char **argv, struct command *cmd, struct plugin *
 		return err;
 	}
 
-	if (cfg.slot > 7) {
-		nvme_show_error("invalid slot:%d", cfg.slot);
+	if (cfg.fs > 7) {
+		nvme_show_error("invalid slot:%d", cfg.fs);
 		return -EINVAL;
 	}
-	if (cfg.action > 7 || cfg.action == 4 || cfg.action == 5) {
-		nvme_show_error("invalid action:%d", cfg.action);
+	if (cfg.ca > 7 || cfg.ca == 4 || cfg.ca == 5) {
+		nvme_show_error("invalid action:%d", cfg.ca);
 		return -EINVAL;
 	}
 	if (cfg.bpid > 1) {
@@ -5238,16 +5238,7 @@ static int fw_commit(int argc, char **argv, struct command *cmd, struct plugin *
 		return -EINVAL;
 	}
 
-	struct nvme_fw_commit_args args = {
-		.args_size	= sizeof(args),
-		.slot		= cfg.slot,
-		.action		= cfg.action,
-		.bpid		= cfg.bpid,
-		.timeout	= nvme_cfg.timeout,
-		.result		= &result,
-	};
-
-	err = nvme_fw_commit(l, &args);
+	err = nvme_fw_commit(l, cfg.fs, cfg.ca, cfg.bpid, &result);
 	if (err < 0) {
 		nvme_show_error("fw-commit: %s", nvme_strerror(-err));
 	} else if (err != 0) {
@@ -5260,8 +5251,8 @@ static int fw_commit(int argc, char **argv, struct command *cmd, struct plugin *
 			case NVME_SC_FW_NEEDS_SUBSYS_RESET:
 			case NVME_SC_FW_NEEDS_RESET:
 				printf("Success activating firmware action:%d slot:%d",
-				       cfg.action, cfg.slot);
-				if (cfg.action == 6 || cfg.action == 7)
+				       cfg.ca, cfg.fs);
+				if (cfg.ca == 6 || cfg.ca == 7)
 					printf(" bpid:%d", cfg.bpid);
 				printf(", but firmware requires %s reset\n",
 				       nvme_fw_status_reset_type(val));
@@ -5275,8 +5266,8 @@ static int fw_commit(int argc, char **argv, struct command *cmd, struct plugin *
 		}
 	} else {
 		printf("Success committing firmware action:%d slot:%d",
-		       cfg.action, cfg.slot);
-		if (cfg.action == 6 || cfg.action == 7)
+		       cfg.ca, cfg.fs);
+		if (cfg.ca == 6 || cfg.ca == 7)
 			printf(" bpid:%d", cfg.bpid);
 		printf("\n");
 		fw_commit_print_mud(l, result);
