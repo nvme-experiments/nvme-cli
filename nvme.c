@@ -6395,7 +6395,7 @@ static int format_cmd(int argc, char **argv, struct command *cmd, struct plugin 
 	const char *ses = "[0-2]: secure erase";
 	const char *pil = "[0-1]: protection info location last/first bytes of metadata";
 	const char *pi = "[0-3]: protection info off/Type 1/Type 2/Type 3";
-	const char *ms = "[0-1]: extended format off/on";
+	const char *mset = "[0-1]: extended format off/on";
 	const char *reset = "Automatically reset the controller after successful format";
 	const char *bs = "target block size";
 	const char *force = "The \"I know what I'm doing\" flag, skip confirmation before sending command";
@@ -6415,7 +6415,7 @@ static int format_cmd(int argc, char **argv, struct command *cmd, struct plugin 
 		__u8	ses;
 		__u8	pi;
 		__u8	pil;
-		__u8	ms;
+		__u8	mset;
 		bool	reset;
 		bool	force;
 		__u64	bs;
@@ -6427,7 +6427,7 @@ static int format_cmd(int argc, char **argv, struct command *cmd, struct plugin 
 		.ses		= 0,
 		.pi		= 0,
 		.pil		= 0,
-		.ms		= 0,
+		.mset		= 0,
 		.reset		= false,
 		.force		= false,
 		.bs		= 0,
@@ -6441,7 +6441,7 @@ static int format_cmd(int argc, char **argv, struct command *cmd, struct plugin 
 		  OPT_BYTE("ses",          's', &cfg.ses,          ses),
 		  OPT_BYTE("pi",           'i', &cfg.pi,           pi),
 		  OPT_BYTE("pil",          'p', &cfg.pil,          pil),
-		  OPT_BYTE("ms",           'm', &cfg.ms,           ms),
+		  OPT_BYTE("ms",           'm', &cfg.mset,         mset),
 		  OPT_FLAG("reset",        'r', &cfg.reset,        reset),
 		  OPT_FLAG("force",          0, &cfg.force,        force),
 		  OPT_SUFFIX("block-size", 'b', &cfg.bs,           bs));
@@ -6572,8 +6572,8 @@ static int format_cmd(int argc, char **argv, struct command *cmd, struct plugin 
 		nvme_show_error("invalid pil:%d", cfg.pil);
 		return -EINVAL;
 	}
-	if (cfg.ms > 1) {
-		nvme_show_error("invalid ms:%d", cfg.ms);
+	if (cfg.mset > 1) {
+		nvme_show_error("invalid mset:%d", cfg.mset);
 		return -EINVAL;
 	}
 
@@ -6590,19 +6590,8 @@ static int format_cmd(int argc, char **argv, struct command *cmd, struct plugin 
 		fprintf(stderr, "Sending format operation ...\n");
 	}
 
-	struct nvme_format_nvm_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.lbafu		= (cfg.lbaf >> 4) & 0x3,
-		.lbaf		= cfg.lbaf & 0xf,
-		.mset		= cfg.ms,
-		.pi		= cfg.pi,
-		.pil		= cfg.pil,
-		.ses		= cfg.ses,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-	err = nvme_format_nvm(l, &args);
+	err = nvme_format_nvm(l, cfg.namespace_id, cfg.lbaf, cfg.mset,
+			cfg.pi, cfg.pil, cfg.ses, NULL);
 	if (err < 0) {
 		nvme_show_error("format: %s", nvme_strerror(-err));
 	} else if (err != 0) {
