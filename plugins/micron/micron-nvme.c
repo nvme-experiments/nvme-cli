@@ -724,7 +724,7 @@ static int micron_smbus_option(int argc, char **argv,
 
 	if (!strcmp(opt.option, "enable")) {
 		cdw11 = opt.value << 1 | 1;
-		err = nvme_set_features_simple(l, fid, 1, cdw11, opt.save,
+		err = nvme_set_features_simple(l, 1, fid, opt.save, cdw11,
 					   &result);
 		if (!err)
 			printf("successfully enabled SMBus on drive\n");
@@ -753,7 +753,7 @@ static int micron_smbus_option(int argc, char **argv,
 			printf("Failed to retrieve SMBus status on the drive\n");
 	} else if (!strcmp(opt.option, "disable")) {
 		cdw11 = opt.value << 1 | 0;
-		err = nvme_set_features_simple(l, fid, 1, cdw11, opt.save,
+		err = nvme_set_features_simple(l, 1, fid, opt.save, cdw11,
 					       &result);
 		if (!err)
 			printf("Successfully disabled SMBus on drive\n");
@@ -1119,7 +1119,7 @@ static int micron_clear_pcie_correctable_errors(int argc, char **argv,
 	 * If these fail, proceed with sysfs interface to set/clear bits
 	 */
 	if (model == M51CX || model == M51BY || model == M51CY) {
-		err = nvme_set_features_simple(l, fid, 0, (1 << 31), false,
+		err = nvme_set_features_simple(l, 0, fid, false, (1 << 31),
 						   &result);
 		if (!err)
 			err = (int)result;
@@ -3006,22 +3006,8 @@ static int micron_latency_stats_track(int argc, char **argv, struct command *cmd
 		return -1;
 	}
 
-	struct nvme_set_features_args args = {
-			.args_size		= sizeof(args),
-			.fid			= MICRON_FID_LATENCY_MONITOR,
-			.nsid			= 0,
-			.cdw11			= enable,
-			.cdw12			= command_mask,
-			.save			= 1,
-			.uuidx			= 0,
-			.cdw13			= timing_mask,
-			.cdw15			= 0,
-			.data_len		= 0,
-			.data			= NULL,
-			.timeout		= NVME_DEFAULT_IOCTL_TIMEOUT,
-			.result			= &result,
-	};
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, 0, MICRON_FID_LATENCY_MONITOR, 1, enable,
+						 command_mask, timing_mask, 0, 0, NULL, 0, &result);
 	if (!err) {
 		printf("Successfully %sd latency monitoring for %s commands with %dms threshold\n",
 				opt.option, opt.command, !opt.threshold ? 800 : opt.threshold * 10);
@@ -3296,7 +3282,7 @@ static int micron_clr_fw_activation_history(int argc, char **argv,
 		return err;
 	}
 
-	err = nvme_set_features_simple(l, fid, 1 << 31, 0, 0, &result);
+	err = nvme_set_features_simple(l, 1 << 31, fid, 0, 0, &result);
 	if (!err)
 		err = (int)result;
 	else
@@ -3347,41 +3333,15 @@ static int micron_telemetry_cntrl_option(int argc, char **argv,
 	}
 
 	if (!strcmp(opt.option, "enable")) {
-		struct nvme_set_features_args args = {
-				.args_size		= sizeof(args),
-				.fid			= fid,
-				.nsid			= 1,
-				.cdw11			= 1,
-				.cdw12			= 0,
-				.save			= (opt.select & 0x1),
-				.uuidx			= 0,
-				.cdw15			= 0,
-				.data_len		= 0,
-				.data			= NULL,
-				.timeout		= NVME_DEFAULT_IOCTL_TIMEOUT,
-				.result			= &result,
-		};
-		err = nvme_set_features(l, &args);
+		err = nvme_set_features(l, 1, fid, (opt.select & 0x1), 1, 0, 0, 0, 0,
+						  NULL, 0, &result);
 		if (!err)
 			printf("successfully set controller telemetry option\n");
 		else
 			printf("Failed to set controller telemetry option\n");
 	} else if (!strcmp(opt.option, "disable")) {
-		struct nvme_set_features_args args = {
-				.args_size		= sizeof(args),
-				.fid			= fid,
-				.nsid			= 1,
-				.cdw11			= 0,
-				.cdw12			= 0,
-				.save			= (opt.select & 0x1),
-				.uuidx			= 0,
-				.cdw15			= 0,
-				.data_len		= 0,
-				.data			= NULL,
-				.timeout		= NVME_DEFAULT_IOCTL_TIMEOUT,
-				.result			= &result,
-		};
-		err = nvme_set_features(l, &args);
+		err = nvme_set_features(l, 1, fid, (opt.select & 0x1), 0, 0, 0, 0, 0,
+						  NULL, 0, &result);
 		if (!err)
 			printf("successfully disabled controller telemetry option\n");
 		else
@@ -3579,21 +3539,9 @@ static int GetOcpEnhancedTelemetryLog(nvme_link_t l, const char *dir, int nLogID
 
 	pBuffer[1] = 1;
 
-	struct nvme_set_features_args args = {
-				.args_size		= sizeof(args),
-				.fid			= MICRON_FEATURE_OCP_ENHANCED_TELEMETRY,
-				.nsid			= NVME_NSID_ALL,
-				.cdw11			= 0,
-				.cdw12			= 0,
-				.save			= 1,
-				.uuidx			= 0,
-				.cdw15			= 0,
-				.data_len		= uiBufferSize,
-				.data			= pBuffer,
-				.timeout		= NVME_DEFAULT_IOCTL_TIMEOUT,
-				.result			= &result,
-		};
-		err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, NVME_NSID_ALL,
+						MICRON_FEATURE_OCP_ENHANCED_TELEMETRY, 1, 0, 0, 0,
+						0, 0, pBuffer, uiBufferSize, &result);
 
 	if (err != 0)
 		printf("Failed to set ETDAS, Data Area 4 won't be avialable >>> ");

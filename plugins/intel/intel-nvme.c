@@ -1541,7 +1541,7 @@ static int enable_lat_stats_tracking(int argc, char **argv,
 	const __u32 cdw11 = 0x0;
 	const __u32 cdw12 = 0x0;
 	const __u32 data_len = 32;
-	const __u32 save = 0;
+	const __u32 sv = 0;
 	_cleanup_nvme_root_ nvme_root_t r = NULL;
 	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	void *buf = NULL;
@@ -1594,21 +1594,6 @@ static int enable_lat_stats_tracking(int argc, char **argv,
 		.result		= &result,
 	};
 
-	struct nvme_set_features_args args_set = {
-		.args_size	= sizeof(args_set),
-		.fid		= fid,
-		.nsid		= nsid,
-		.cdw11		= option,
-		.cdw12		= cdw12,
-		.save		= save,
-		.uuidx		= 0,
-		.cdw15		= 0,
-		.data_len	= data_len,
-		.data		= buf,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result		= &result,
-	};
-
 	switch (option) {
 	case None:
 		err = nvme_get_features(l, &args_get);
@@ -1623,7 +1608,8 @@ static int enable_lat_stats_tracking(int argc, char **argv,
 		break;
 	case True:
 	case False:
-		err = nvme_set_features(l, &args_set);
+		err = nvme_set_features(l, nsid, fid, sv, option, cdw12, 0, 0, 0, buf,
+						  data_len, &result);
 		if (err > 0) {
 			nvme_show_status(err);
 		} else if (err < 0) {
@@ -1651,7 +1637,7 @@ static int set_lat_stats_thresholds(int argc, char **argv,
 	const __u32 nsid = 0;
 	const __u8 fid = 0xf7;
 	const __u32 cdw12 = 0x0;
-	const __u32 save = 0;
+	const __u32 sv = 0;
 	_cleanup_nvme_root_ nvme_root_t r = NULL;
 	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	__u32 result;
@@ -1703,21 +1689,8 @@ static int set_lat_stats_thresholds(int argc, char **argv,
 
 		}
 
-		struct nvme_set_features_args args = {
-			.args_size	= sizeof(args),
-			.fid		= fid,
-			.nsid		= nsid,
-			.cdw11		= cfg.write ? 0x1 : 0x0,
-			.cdw12		= cdw12,
-			.save		= save,
-			.uuidx		= 0,
-			.cdw15		= 0,
-			.data_len	= sizeof(thresholds),
-			.data		= thresholds,
-			.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
-			.result		= &result,
-		};
-		err = nvme_set_features(l, &args);
+		err = nvme_set_features(l, nsid, fid, sv, cfg.write ? 0x1 : 0x0, cdw12,
+						  0, 0, 0, thresholds, sizeof(thresholds), &result);
 
 		if (err > 0) {
 			nvme_show_status(err);

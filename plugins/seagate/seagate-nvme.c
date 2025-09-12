@@ -1487,24 +1487,11 @@ static int clear_fw_activate_history(int argc, char **argv, struct command *cmd,
 	if (!stx_is_jag_pan(modelNo)) {
 		printf("\nDevice does not support Clear FW Activation History\n");
 	} else {
-		struct nvme_set_features_args args = {
-		.args_size  = sizeof(args),
-		.fid        = 0xC1,
-		.nsid       = 0,
-		.cdw11      = 0x80000000,
-		.cdw12      = 0,
-		.save       = 0,
-		.uuidx      = 0,
-		.cdw15      = 0,
-		.data_len   = 0,
-		.data       = NULL,
-		.timeout    = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result     = &result,
-	};
-	err = nvme_set_features(l, &args);
-	if (err)
-		fprintf(stderr, "%s: couldn't clear PCIe correctable errors\n",
-			__func__);
+		err = nvme_set_features(l, 0, 0xC1, 0, 0x80000000, 0, 0, 0, 0, NULL, 0,
+						  &result);
+		if (err)
+			fprintf(stderr, "%s: couldn't clear PCIe correctable errors\n",
+				__func__);
 	}
 
 	if (err < 0) {
@@ -1559,28 +1546,15 @@ static int vs_clr_pcie_correctable_errs(int argc, char **argv, struct command *c
 	}
 
 	if (!stx_is_jag_pan(modelNo)) {
-		err = nvme_set_features_simple(l, 0xE1, 0, 0xCB, cfg.save, &result);
+		err = nvme_set_features_simple(l, 0, 0xE1, cfg.save, 0xCB, &result);
 	} else {
-		struct nvme_set_features_args args = {
-			.args_size  = sizeof(args),
-			.fid        = 0xC3,
-			.nsid       = 0,
-			.cdw11      = 0x80000000,
-			.cdw12      = 0,
-			.save       = 0,
-			.uuidx      = 0,
-			.cdw15      = 0,
-			.data_len   = 0,
-			.data       = NULL,
-			.timeout    = NVME_DEFAULT_IOCTL_TIMEOUT,
-			.result     = &result,
-		};
-		err = nvme_set_features(l, &args);
+		err = nvme_set_features(l, 0, 0xC3, 0, 0x80000000, 0, 0, 0, 0, NULL, 0,
+						  &result);
 		if (err)
 			fprintf(stderr, "%s: couldn't clear PCIe correctable errors\n", __func__);
 	}
 
-	err = nvme_set_features_simple(l, 0xE1, 0, 0xCB, cfg.save, &result);
+	err = nvme_set_features_simple(l, 0, 0xE1, cfg.save, 0xCB, &result);
 
 	if (err < 0) {
 		perror("set-feature");
