@@ -44,6 +44,7 @@ static int sndk_do_cap_telemetry_log(struct nvme_global_ctx *ctx,
 	__u64 capabilities = 0;
 	bool host_behavior_changed = false;
 	struct nvme_feat_host_behavior prev = {0};
+	struct nvme_passthru_cmd cmd;
 	__u32 result;
 	int ret;
 
@@ -80,7 +81,8 @@ static int sndk_do_cap_telemetry_log(struct nvme_global_ctx *ctx,
 				struct nvme_feat_host_behavior da4_enable = prev;
 
 				da4_enable.etdas = 1;
-				nvme_set_features_host_behavior(hdl, 0, &da4_enable);
+				nvme_init_set_features_host_behavior(&cmd, 0, &da4_enable);
+				nvme_submit_admin_passthru(hdl, &cmd, NULL);
 				host_behavior_changed = true;
 			}
 		}
@@ -159,8 +161,10 @@ static int sndk_do_cap_telemetry_log(struct nvme_global_ctx *ctx,
 		err = -1;
 	}
 
-	if (host_behavior_changed)
-		nvme_set_features_host_behavior(hdl, 0, &prev);
+	if (host_behavior_changed) {
+		nvme_init_set_features_host_behavior(&cmd, 0, &prev);
+		nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	}
 
 	free(log);
 close_output:
