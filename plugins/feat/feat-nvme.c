@@ -98,21 +98,13 @@ static int feat_get(nvme_link_t l, const __u8 fid, __u32 cdw11, __u8 sel, const 
 	return err;
 }
 
-static int power_mgmt_set(nvme_link_t l, const __u8 fid, __u8 ps, __u8 wh, bool save)
+static int power_mgmt_set(nvme_link_t l, const __u8 fid, __u8 ps, __u8 wh, bool sv)
 {
+	__u32 cdw11 = NVME_SET(ps, FEAT_PWRMGMT_PS) | NVME_SET(wh, FEAT_PWRMGMT_WH);
 	__u32 result;
 	int err;
 
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = fid,
-		.cdw11 = NVME_SET(ps, FEAT_PWRMGMT_PS) | NVME_SET(wh, FEAT_PWRMGMT_WH),
-		.save = save,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-	};
-
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, 0, fid, sv, cdw11, 0, 0, 0, 0, NULL, 0, &result);
 
 	nvme_show_init();
 
@@ -121,9 +113,9 @@ static int power_mgmt_set(nvme_link_t l, const __u8 fid, __u8 ps, __u8 wh, bool 
 	} else if (err < 0) {
 		nvme_show_perror("Set %s", power_mgmt_feat);
 	} else {
-		nvme_show_result("Set %s: 0x%04x (%s)", power_mgmt_feat, args.cdw11,
-				 save ? "Save" : "Not save");
-		nvme_feature_show_fields(fid, args.cdw11, NULL);
+		nvme_show_result("Set %s: 0x%04x (%s)", power_mgmt_feat, cdw11,
+				 sv ? "Save" : "Not save");
+		nvme_feature_show_fields(fid, cdw11, NULL);
 	}
 
 	nvme_show_finish();
@@ -166,7 +158,7 @@ static int feat_power_mgmt(int argc, char **argv, struct command *cmd, struct pl
 }
 
 static int perfc_set(nvme_link_t l, __u8 fid, __u32 cdw11, struct perfc_config *cfg,
-		     bool save)
+		     bool sv)
 {
 	__u32 result;
 	int err;
@@ -175,17 +167,6 @@ static int perfc_set(nvme_link_t l, __u8 fid, __u32 cdw11, struct perfc_config *
 
 	struct nvme_perf_characteristics data = {
 		.attr_buf = { 0 },
-	};
-
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = fid,
-		.cdw11 = cdw11,
-		.save = save,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-		.data = &data,
-		.data_len = sizeof(data),
 	};
 
 	switch (cfg->attri) {
@@ -214,7 +195,8 @@ static int perfc_set(nvme_link_t l, __u8 fid, __u32 cdw11, struct perfc_config *
 		break;
 	}
 
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, 0, fid, sv, cdw11, 0, 0, 0, 0, &data,
+						 sizeof(data), &result);
 
 	nvme_show_init();
 
@@ -223,9 +205,9 @@ static int perfc_set(nvme_link_t l, __u8 fid, __u32 cdw11, struct perfc_config *
 	} else if (err < 0) {
 		nvme_show_perror("Set %s", perfc_feat);
 	} else {
-		nvme_show_result("Set %s: 0x%04x (%s)", perfc_feat, args.cdw11,
-				 save ? "Save" : "Not save");
-		nvme_feature_show_fields(args.fid, args.cdw11, NULL);
+		nvme_show_result("Set %s: 0x%04x (%s)", perfc_feat, cdw11,
+				 sv ? "Save" : "Not save");
+		nvme_feature_show_fields(fid, cdw11, NULL);
 	}
 
 	nvme_show_finish();
@@ -275,21 +257,15 @@ static int feat_perfc(int argc, char **argv, struct command *cmd, struct plugin 
 	return err;
 }
 
-static int hctm_set(nvme_link_t l, const __u8 fid, __u16 tmt1, __u16 tmt2, bool save)
+static int hctm_set(nvme_link_t l, const __u8 fid, __u16 tmt1, __u16 tmt2, bool sv)
 {
+	__u32 cdw11 = NVME_SET(tmt1, FEAT_HCTM_TMT1)
+		| NVME_SET(tmt2, FEAT_HCTM_TMT2);
 	__u32 result;
 	int err;
 
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = fid,
-		.cdw11 = NVME_SET(tmt1, FEAT_HCTM_TMT1) | NVME_SET(tmt2, FEAT_HCTM_TMT2),
-		.save = save,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-	};
-
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, 0, fid, sv, cdw11, 0, 0, 0, 0, NULL, 0,
+						 &result);
 
 	nvme_show_init();
 
@@ -298,9 +274,9 @@ static int hctm_set(nvme_link_t l, const __u8 fid, __u16 tmt1, __u16 tmt2, bool 
 	} else if (err < 0) {
 		nvme_show_perror("Set %s", hctm_feat);
 	} else {
-		nvme_show_result("Set %s: 0x%04x (%s)", hctm_feat, args.cdw11,
-				 save ? "Save" : "Not save");
-		nvme_feature_show_fields(fid, args.cdw11, NULL);
+		nvme_show_result("Set %s: 0x%04x (%s)", hctm_feat, cdw11,
+				 sv ? "Save" : "Not save");
+		nvme_feature_show_fields(fid, cdw11, NULL);
 	}
 
 	nvme_show_finish();
@@ -340,26 +316,17 @@ static int feat_hctm(int argc, char **argv, struct command *cmd, struct plugin *
 	return err;
 }
 
-static int timestamp_set(nvme_link_t l, const __u8 fid, __u64 tstmp, bool save)
+static int timestamp_set(nvme_link_t l, const __u8 fid, __u64 tstmp, bool sv)
 {
 	__u32 result;
 	int err;
 	struct nvme_timestamp ts;
 	__le64 timestamp = cpu_to_le64(tstmp);
 
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = fid,
-		.save = save,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-		.data = &ts,
-		.data_len = sizeof(ts),
-	};
-
 	memcpy(ts.timestamp, &timestamp, sizeof(ts.timestamp));
 
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, 0, fid, sv, 0, 0, 0, 0, 0, &ts, sizeof(ts),
+						 &result);
 
 	nvme_show_init();
 
@@ -368,8 +335,8 @@ static int timestamp_set(nvme_link_t l, const __u8 fid, __u64 tstmp, bool save)
 	} else if (err < 0) {
 		nvme_show_perror("Set %s", timestamp_feat);
 	} else {
-		nvme_show_result("Set %s: (%s)", timestamp_feat, save ? "Save" : "Not save");
-		nvme_feature_show_fields(fid, args.cdw11, args.data);
+		nvme_show_result("Set %s: (%s)", timestamp_feat, sv ? "Save" : "Not save");
+		nvme_feature_show_fields(fid, 0, (unsigned char *) &ts);
 	}
 
 	nvme_show_finish();
@@ -417,9 +384,9 @@ static int temp_thresh_set(nvme_link_t l, const __u8 fid, struct argconfig_comma
 	__u8 tmpsel;
 	__u8 thsel;
 	__u8 tmpthh;
-	bool save = argconfig_parse_seen(opts, "save");
+	bool sv = argconfig_parse_seen(opts, "save");
 
-	if (save)
+	if (sv)
 		sel = NVME_GET_FEATURES_SEL_SAVED;
 
 	err = nvme_get_features_temp_thresh(l, sel, cfg->tmpsel, cfg->thsel, &result);
@@ -431,8 +398,8 @@ static int temp_thresh_set(nvme_link_t l, const __u8 fid, struct argconfig_comma
 			cfg->tmpthh = tmpthh;
 	}
 
-	err = nvme_set_features_temp_thresh(l, cfg->tmpth, cfg->tmpsel, cfg->thsel, cfg->tmpthh,
-					    save, &result);
+	err = nvme_set_features_temp_thresh(l, sv, cfg->tmpth, cfg->tmpsel, cfg->thsel, cfg->tmpthh,
+					    &result);
 
 	nvme_show_init();
 
@@ -441,7 +408,7 @@ static int temp_thresh_set(nvme_link_t l, const __u8 fid, struct argconfig_comma
 	} else if (err < 0) {
 		nvme_show_perror("Set %s", temp_thresh_feat);
 	} else {
-		nvme_show_result("Set %s: (%s)", temp_thresh_feat, save ? "Save" : "Not save");
+		nvme_show_result("Set %s: (%s)", temp_thresh_feat, sv ? "Save" : "Not save");
 		nvme_feature_show_fields(fid, NVME_SET(cfg->tmpth, FEAT_TT_TMPTH) |
 					 NVME_SET(cfg->tmpsel, FEAT_TT_TMPSEL) |
 					 NVME_SET(cfg->thsel, FEAT_TT_THSEL) |
@@ -490,12 +457,12 @@ static int arbitration_set(nvme_link_t l, const __u8 fid, struct argconfig_comma
 			   struct arbitration_config *cfg)
 {
 	enum nvme_get_features_sel sel = NVME_GET_FEATURES_SEL_CURRENT;
-	bool save = argconfig_parse_seen(opts, "save");
+	bool sv = argconfig_parse_seen(opts, "save");
 	__u8 ab, lpw, mpw, hpw;
 	__u32 result;
 	int err;
 
-	if (save)
+	if (sv)
 		sel = NVME_GET_FEATURES_SEL_SAVED;
 
 	err = nvme_get_features_arbitration(l, sel, &result);
@@ -511,8 +478,8 @@ static int arbitration_set(nvme_link_t l, const __u8 fid, struct argconfig_comma
 			cfg->hpw = hpw;
 	}
 
-	err = nvme_set_features_arbitration(l, cfg->ab, cfg->lpw, cfg->mpw, cfg->hpw,
-					    save, &result);
+	err = nvme_set_features_arbitration(l, sv, cfg->ab, cfg->lpw, cfg->mpw, cfg->hpw,
+					    &result);
 
 	nvme_show_init();
 
@@ -521,7 +488,7 @@ static int arbitration_set(nvme_link_t l, const __u8 fid, struct argconfig_comma
 	} else if (err < 0) {
 		nvme_show_perror("Set %s", temp_thresh_feat);
 	} else {
-		nvme_show_result("Set %s: (%s)", arbitration_feat, save ? "Save" : "Not save");
+		nvme_show_result("Set %s: (%s)", arbitration_feat, sv ? "Save" : "Not save");
 		nvme_feature_show_fields(fid, NVME_SET(cfg->ab, FEAT_ARBITRATION_BURST) |
 					 NVME_SET(cfg->lpw, FEAT_ARBITRATION_LPW) |
 					 NVME_SET(cfg->mpw, FEAT_ARBITRATION_MPW) |
@@ -563,21 +530,13 @@ static int feat_arbitration(int argc, char **argv, struct command *cmd, struct p
 	return arbitration_set(l, fid, opts, &cfg);
 }
 
-static int volatile_wc_set(nvme_link_t l, const __u8 fid, bool wce, bool save)
+static int volatile_wc_set(nvme_link_t l, const __u8 fid, bool wce, bool sv)
 {
+	__u32 cdw11 = NVME_SET(wce, FEAT_VWC_WCE);
 	__u32 result;
 	int err;
 
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = fid,
-		.cdw11 = NVME_SET(wce, FEAT_VWC_WCE),
-		.save = save,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-	};
-
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, 0, fid, sv, cdw11, 0, 0, 0, 0, NULL, 0, &result);
 
 	nvme_show_init();
 
@@ -586,9 +545,9 @@ static int volatile_wc_set(nvme_link_t l, const __u8 fid, bool wce, bool save)
 	} else if (err < 0) {
 		nvme_show_perror("Set %s", volatile_wc_feat);
 	} else {
-		nvme_show_result("Set %s: 0x%04x (%s)", volatile_wc_feat, args.cdw11,
-				 save ? "Save" : "Not save");
-		nvme_feature_show_fields(fid, args.cdw11, NULL);
+		nvme_show_result("Set %s: 0x%04x (%s)", volatile_wc_feat, cdw11,
+				 sv ? "Save" : "Not save");
+		nvme_feature_show_fields(fid, cdw11, NULL);
 	}
 
 	nvme_show_finish();

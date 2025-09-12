@@ -386,19 +386,8 @@ int ocp_set_latency_monitor_feature(int argc, char **argv, struct command *cmd, 
 	buf.discard_debug_log = cfg.discard_debug_log;
 	buf.latency_monitor_feature_enable = cfg.latency_monitor_feature_enable;
 
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = OCP_FID_LM,
-		.nsid = 0,
-		.cdw12 = 0,
-		.save = 1,
-		.data_len = sizeof(struct feature_latency_monitor),
-		.data = (void *)&buf,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-	};
-
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, 0, OCP_FID_LM, 1, 0, 0, 0, 0, 0, (void *)&buf,
+						 sizeof(struct feature_latency_monitor), &result);
 	if (err < 0) {
 		perror("set-feature");
 	} else if (!err) {
@@ -562,38 +551,24 @@ static int eol_plp_failure_mode_get(nvme_link_t l, const __u32 nsid, const __u8 
 }
 
 static int eol_plp_failure_mode_set(nvme_link_t l, const __u32 nsid,
-				    const __u8 fid, __u8 mode, bool save,
+				    const __u8 fid, __u8 mode, bool sv,
 				    bool uuid)
 {
 	__u32 result;
 	int err;
-	__u8 uuid_index = 0;
+	__u8 uidx = 0;
 
 	if (uuid) {
 		/* OCP 2.0 requires UUID index support */
-		err = ocp_get_uuid_index(l, &uuid_index);
-		if (err || !uuid_index) {
+		err = ocp_get_uuid_index(l, &uidx);
+		if (err || !uidx) {
 			nvme_show_error("ERROR: No OCP UUID index found");
 			return err;
 		}
 	}
 
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = fid,
-		.nsid = nsid,
-		.cdw11 = mode << 30,
-		.cdw12 = 0,
-		.save = save,
-		.uuidx = uuid_index,
-		.cdw15 = 0,
-		.data_len = 0,
-		.data = NULL,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-	};
-
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, nsid, fid, sv, mode << 30, 0, 0, 0, uidx, NULL,
+						 0, &result);
 	if (err > 0) {
 		nvme_show_status(err);
 	} else if (err < 0) {
@@ -602,7 +577,7 @@ static int eol_plp_failure_mode_set(nvme_link_t l, const __u32 nsid,
 	} else {
 		nvme_show_result("Successfully set mode (feature: %#0*x): %#0*x (%s: %s).",
 				 fid ? 4 : 2, fid, mode ? 10 : 8, mode,
-				 save ? "Save" : "Not save",
+				 sv ? "Save" : "Not save",
 				 eol_plp_failure_mode_to_string(mode));
 	}
 
@@ -1946,31 +1921,17 @@ static int ocp_set_telemetry_profile(nvme_link_t l, __u8 tps)
 {
 	__u32 result;
 	int err;
-	__u8 uuid_index = 0;
+	__u8 uidx = 0;
 
 	/* OCP 2.0 requires UUID index support */
-	err = ocp_get_uuid_index(l, &uuid_index);
-	if (err || !uuid_index) {
+	err = ocp_get_uuid_index(l, &uidx);
+	if (err || !uidx) {
 		nvme_show_error("ERROR: No OCP UUID index found");
 		return err;
 	}
 
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = OCP_FID_TEL_CFG,
-		.nsid = 0xFFFFFFFF,
-		.cdw11 = tps,
-		.cdw12 = 0,
-		.save = true,
-		.uuidx = uuid_index,
-		.cdw15 = 0,
-		.data_len = 0,
-		.data = NULL,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-	};
-
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, 0xFFFFFFFF, OCP_FID_TEL_CFG, true, tps, 0, 0, 0,
+						 uidx, NULL, 0, &result);
 	if (err > 0) {
 		nvme_show_status(err);
 	} else if (err < 0) {
@@ -2104,38 +2065,24 @@ static int ocp_get_telemetry_profile_feature(int argc, char **argv, struct comma
 /// DSSD Power State (Feature Identifier C7h) Set Feature
 
 static int set_dssd_power_state(nvme_link_t l, const __u32 nsid,
-				const __u8 fid, __u8 power_state, bool save,
+				const __u8 fid, __u8 power_state, bool sv,
 				bool uuid)
 {
 	__u32 result;
 	int err;
-	__u8 uuid_index = 0;
+	__u8 uidx = 0;
 
 	if (uuid) {
 		/* OCP 2.0 requires UUID index support */
-		err = ocp_get_uuid_index(l, &uuid_index);
-		if (err || !uuid_index) {
+		err = ocp_get_uuid_index(l, &uidx);
+		if (err || !uidx) {
 			nvme_show_error("ERROR: No OCP UUID index found");
 			return err;
 		}
 	}
 
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = fid,
-		.nsid = nsid,
-		.cdw11 = power_state,
-		.cdw12 = 0,
-		.save = save,
-		.uuidx = uuid_index,
-		.cdw15 = 0,
-		.data_len = 0,
-		.data = NULL,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-	};
-
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, nsid, fid, sv, power_state, 0, 0, 0,
+						 uidx, NULL, 0, &result);
 	if (err > 0) {
 		nvme_show_status(err);
 	} else if (err < 0) {
@@ -2144,7 +2091,7 @@ static int set_dssd_power_state(nvme_link_t l, const __u32 nsid,
 	} else {
 		printf("Successfully set DSSD Power State (feature: 0xC7) to below values\n");
 		printf("DSSD Power State: 0x%x\n", power_state);
-		printf("Save bit Value: 0x%x\n", save);
+		printf("Save bit Value: 0x%x\n", sv);
 	}
 
 	return err;
@@ -2298,27 +2245,27 @@ static int set_plp_health_check_interval(int argc, char **argv, struct command *
 
 	const char *desc = "Define Issue Set Feature command (FID : 0xC6) PLP Health Check Interval";
 	const char *plp_health_interval = "[31:16]:PLP Health Check Interval";
-	const char *save = "Specifies that the controller shall save the attribute";
+	const char *sv = "Specifies that the controller shall save the attribute";
 	const __u32 nsid = 0;
 	_cleanup_nvme_root_ nvme_root_t r = NULL;
 	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	int err;
 	__u32 result;
-	__u8 uuid_index = 0;
+	__u8 uidx = 0;
 
 	struct config {
 		__le16 plp_health_interval;
-		bool save;
+		bool sv;
 	};
 
 	struct config cfg = {
 		.plp_health_interval = 0,
-		.save = false,
+		.sv = false,
 	};
 
 	OPT_ARGS(opts) = {
 		OPT_BYTE("plp_health_interval", 'p', &cfg.plp_health_interval, plp_health_interval),
-		OPT_FLAG("save", 's', &cfg.save, save),
+		OPT_FLAG("save", 's', &cfg.sv, sv),
 		OPT_FLAG("no-uuid", 'n', NULL, no_uuid),
 		OPT_END()
 	};
@@ -2330,30 +2277,16 @@ static int set_plp_health_check_interval(int argc, char **argv, struct command *
 
 	if (!argconfig_parse_seen(opts, "no-uuid")) {
 		/* OCP 2.0 requires UUID index support */
-		err = ocp_get_uuid_index(l, &uuid_index);
-		if (err || !uuid_index) {
+		err = ocp_get_uuid_index(l, &uidx);
+		if (err || !uidx) {
 			printf("ERROR: No OCP UUID index found");
 			return err;
 		}
 	}
 
-
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = OCP_FID_PLPI,
-		.nsid = nsid,
-		.cdw11 = cfg.plp_health_interval << 16,
-		.cdw12 = 0,
-		.save = cfg.save,
-		.uuidx = uuid_index,
-		.cdw15 = 0,
-		.data_len = 0,
-		.data = NULL,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-	};
-
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, nsid, OCP_FID_PLPI, cfg.sv,
+			cfg.plp_health_interval << 16, 0, 0, 0, uidx, NULL, 0,
+			&result);
 	if (err > 0) {
 		nvme_show_status(err);
 	} else if (err < 0) {
@@ -2362,7 +2295,7 @@ static int set_plp_health_check_interval(int argc, char **argv, struct command *
 	} else {
 		printf("Successfully set the PLP Health Check Interval");
 		printf("PLP Health Check Interval: 0x%x\n", cfg.plp_health_interval);
-		printf("Save bit Value: 0x%x\n", cfg.save);
+		printf("Save bit Value: 0x%x\n", cfg.sv);
 	}
 	return err;
 }
@@ -2435,27 +2368,27 @@ static int set_dssd_async_event_config(int argc, char **argv, struct command *cm
 
 	const char *desc = "Issue Set Feature command (FID : 0xC9) DSSD Async Event Config";
 	const char *epn = "[0]:Enable Panic Notices";
-	const char *save = "Specifies that the controller shall save the attribute";
+	const char *sv = "Specifies that the controller shall save the attribute";
 	const __u32 nsid = 0;
 	_cleanup_nvme_root_ nvme_root_t r = NULL;
 	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	int err;
 	__u32 result;
-	__u8 uuid_index = 0;
+	__u8 uidx = 0;
 
 	struct config {
 		bool epn;
-		bool save;
+		bool sv;
 	};
 
 	struct config cfg = {
 		.epn = false,
-		.save = false,
+		.sv = false,
 	};
 
 	OPT_ARGS(opts) = {
 		OPT_FLAG("enable-panic-notices", 'e', &cfg.epn, epn),
-		OPT_FLAG("save", 's', &cfg.save, save),
+		OPT_FLAG("save", 's', &cfg.sv, sv),
 		OPT_END()
 	};
 
@@ -2464,28 +2397,14 @@ static int set_dssd_async_event_config(int argc, char **argv, struct command *cm
 		return err;
 
 	/* OCP 2.0 requires UUID index support */
-	err = ocp_get_uuid_index(l, &uuid_index);
-	if (err || !uuid_index) {
+	err = ocp_get_uuid_index(l, &uidx);
+	if (err || !uidx) {
 		printf("ERROR: No OCP UUID index found\n");
 		return err;
 	}
 
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = OCP_FID_DAEC,
-		.nsid = nsid,
-		.cdw11 = cfg.epn ? 1 : 0,
-		.cdw12 = 0,
-		.save = cfg.save,
-		.uuidx = uuid_index,
-		.cdw15 = 0,
-		.data_len = 0,
-		.data = NULL,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-	};
-
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, nsid, OCP_FID_DAEC, cfg.sv, cfg.epn ? 1 : 0,
+						 0, 0, 0, uidx, NULL, 0, &result);
 	if (err > 0) {
 		nvme_show_status(err);
 	} else if (err < 0) {
@@ -2494,7 +2413,7 @@ static int set_dssd_async_event_config(int argc, char **argv, struct command *cm
 	} else {
 		printf("Successfully set the DSSD Asynchronous Event Configuration\n");
 		printf("Enable Panic Notices bit Value: 0x%x\n", cfg.epn);
-		printf("Save bit Value: 0x%x\n", cfg.save);
+		printf("Save bit Value: 0x%x\n", cfg.sv);
 	}
 	return err;
 }
@@ -2850,15 +2769,9 @@ static int get_error_injection(int argc, char **argv, struct command *cmd, struc
 static int error_injection_set(nvme_link_t l, struct erri_config *cfg, bool uuid)
 {
 	int err;
+	__u8 uidx;
 	__u32 result;
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = OCP_FID_ERRI,
-		.cdw11 = cfg->number,
-		.data_len = cfg->number * sizeof(struct erri_entry),
-		.timeout = nvme_cfg.timeout,
-		.result = &result,
-	};
+	__u32 data_len = cfg->number * sizeof(struct erri_entry);
 
 	_cleanup_fd_ int ffd = -1;
 
@@ -2866,14 +2779,14 @@ static int error_injection_set(nvme_link_t l, struct erri_config *cfg, bool uuid
 
 	if (uuid) {
 		/* OCP 2.0 requires UUID index support */
-		err = ocp_get_uuid_index(l, &args.uuidx);
-		if (err || !args.uuidx) {
+		err = ocp_get_uuid_index(l, &uidx);
+		if (err || !uidx) {
 			nvme_show_error("ERROR: No OCP UUID index found");
 			return err;
 		}
 	}
 
-	entry = nvme_alloc(args.data_len);
+	entry = nvme_alloc(data_len);
 	if (!entry) {
 		nvme_show_error("malloc: %s", strerror(errno));
 		return -errno;
@@ -2885,7 +2798,7 @@ static int error_injection_set(nvme_link_t l, struct erri_config *cfg, bool uuid
 			nvme_show_error("Failed to open file %s: %s", cfg->file, strerror(errno));
 			return -EINVAL;
 		}
-		err = read(ffd, entry, args.data_len);
+		err = read(ffd, entry, data_len);
 		if (err < 0) {
 			nvme_show_error("failed to read data buffer from input file: %s",
 					strerror(errno));
@@ -2898,9 +2811,8 @@ static int error_injection_set(nvme_link_t l, struct erri_config *cfg, bool uuid
 		entry->nrtdp = cfg->nrtdp;
 	}
 
-	args.data = entry;
-
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, 0, OCP_FID_ERRI, 0, cfg->number,
+						 0, 0, 0, uidx, entry, data_len, &result);
 	if (err) {
 		if (err < 0)
 			nvme_show_error("set-error-injection: %s", nvme_strerror(errno));
@@ -2910,9 +2822,9 @@ static int error_injection_set(nvme_link_t l, struct erri_config *cfg, bool uuid
 	}
 
 	printf("set-error-injection, data: %s, number: %d, uuid: %d, type: %d, nrtdp: %d\n",
-	       cfg->file, cfg->number, args.uuidx, cfg->type, cfg->nrtdp);
-	if (args.data)
-		d(args.data, args.data_len, 16, 1);
+	       cfg->file, cfg->number, uidx, cfg->type, cfg->nrtdp);
+	if (entry)
+		d((unsigned char *)entry, data_len, 16, 1);
 
 	return 0;
 }
@@ -3011,37 +2923,32 @@ static int enable_ieee1667_silo_set(nvme_link_t l,
 {
 	struct ieee1667_get_cq_entry cq_entry;
 	int err;
+	__u8 uidx;
 	const __u8 fid = OCP_FID_1667;
 	bool enable = argconfig_parse_seen(opts, "enable");
-
-	struct nvme_set_features_args args = {
-		.result = (__u32 *)&cq_entry,
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.cdw11 = OCP_SET(enable, ENABLE_IEEE1667_SILO),
-		.save = argconfig_parse_seen(opts, "save"),
-		.fid = fid,
-	};
+	bool sv = argconfig_parse_seen(opts, "save");
+	__u32 cdw11 = OCP_SET(enable, ENABLE_IEEE1667_SILO);
 
 	if (!argconfig_parse_seen(opts, "no-uuid")) {
 		/* OCP 2.0 requires UUID index support */
-		err = ocp_get_uuid_index(l, &args.uuidx);
-		if (err || !args.uuidx) {
+		err = ocp_get_uuid_index(l, &uidx);
+		if (err || !uidx) {
 			nvme_show_error("ERROR: No OCP UUID index found");
 			return err;
 		}
 	}
 
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(l, 0, fid, sv, cdw11, 0, 0, 0, uidx, NULL, 0,
+						 (__u32 *)&cq_entry);
 	if (err > 0) {
 		nvme_show_status(err);
 	} else if (err < 0) {
 		nvme_show_perror(enable_ieee1667_silo);
 		fprintf(stderr, "Command failed while parsing.\n");
 	} else {
-		enable = OCP_GET(args.cdw11, ENABLE_IEEE1667_SILO);
+		enable = OCP_GET(cdw11, ENABLE_IEEE1667_SILO);
 		nvme_show_result("Successfully set enable (feature: 0x%02x): %d (%s: %s).", fid,
-				 enable, args.save ? "Save" : "Not save",
+				 enable, sv ? "Save" : "Not save",
 				 enable ? "Enabled" : "Disabled");
 	}
 

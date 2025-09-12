@@ -8964,8 +8964,8 @@ static int wdc_do_clear_pcie_correctable_errors_fid(nvme_link_t l)
 	__u32 result;
 	__u32 value = 1 << 31; /* Bit 31 - clear PCIe correctable count */
 
-	ret = nvme_set_features_simple(l, WDC_NVME_CLEAR_PCIE_CORR_FEATURE_ID, 0, value,
-				false, &result);
+	ret = nvme_set_features_simple(l, 0, WDC_NVME_CLEAR_PCIE_CORR_FEATURE_ID, false,
+				value, &result);
 
 	nvme_show_status(ret);
 	return ret;
@@ -9452,8 +9452,8 @@ static int wdc_do_clear_fw_activate_history_fid(nvme_link_t l)
 	__u32 result;
 	__u32 value = 1 << 31; /* Bit 31 - Clear Firmware Update History Log */
 
-	ret = nvme_set_features_simple(l, WDC_NVME_CLEAR_FW_ACT_HIST_VU_FID, 0, value,
-				false, &result);
+	ret = nvme_set_features_simple(l, 0, WDC_NVME_CLEAR_FW_ACT_HIST_VU_FID, false,
+				value, &result);
 
 	nvme_show_status(ret);
 	return ret;
@@ -9547,16 +9547,16 @@ static int wdc_vs_telemetry_controller_option(int argc, char **argv, struct comm
 	}
 
 	if (cfg.disable) {
-		ret = nvme_set_features_simple(l,
+		ret = nvme_set_features_simple(l, 0,
 					       WDC_VU_DISABLE_CNTLR_TELEMETRY_OPTION_FEATURE_ID,
-					       0, 1, false, &result);
+					       false, 1, &result);
 
 		wdc_clear_reason_id(l);
 	} else {
 		if (cfg.enable) {
-			ret = nvme_set_features_simple(l,
+			ret = nvme_set_features_simple(l, 0,
 						       WDC_VU_DISABLE_CNTLR_TELEMETRY_OPTION_FEATURE_ID,
-						       0, 0, false, &result);
+						       false, 0, &result);
 		} else if (cfg.status) {
 			ret = nvme_get_features_simple(l,
 						       WDC_VU_DISABLE_CNTLR_TELEMETRY_OPTION_FEATURE_ID,
@@ -12593,19 +12593,8 @@ int wdc_set_latency_monitor_feature(int argc, char **argv, struct command *cmd,
 	buf.discard_debug_log = cfg.discard_debug_log;
 	buf.latency_monitor_feature_enable = cfg.latency_monitor_feature_enable;
 
-	struct nvme_set_features_args args = {
-		.args_size = sizeof(args),
-		.fid = NVME_FEAT_OCP_LATENCY_MONITOR,
-		.nsid = 0,
-		.cdw12 = 0,
-		.save = 1,
-		.data_len = sizeof(struct feature_latency_monitor),
-		.data = (void *)&buf,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-	};
-
-	ret = nvme_set_features(l, &args);
+	ret = nvme_set_features(l, 0, NVME_FEAT_OCP_LATENCY_MONITOR, 1, 0, 0, 0,
+			0, 0, (void *)&buf, sizeof(struct feature_latency_monitor), &result);
 
 	if (ret < 0) {
 		perror("set-feature");
