@@ -6805,21 +6805,8 @@ static int sec_send(int argc, char **argv, struct command *cmd, struct plugin *p
 		return -errno;
 	}
 
-	struct nvme_security_send_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.nssf		= cfg.nssf,
-		.spsp0		= cfg.spsp & 0xff,
-		.spsp1		= cfg.spsp >> 8,
-		.secp		= cfg.secp,
-		.tl		= cfg.tl,
-		.data_len	= cfg.tl,
-		.data		= sec_buf,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
-
-	err = nvme_security_send(l, &args);
+	err = nvme_security_send(l, cfg.namespace_id, cfg.nssf, cfg.spsp,
+			cfg.secp, cfg.tl, sec_buf, cfg.tl, NULL);
 
 	if (err < 0)
 		nvme_show_error("security-send: %s", nvme_strerror(-err));
