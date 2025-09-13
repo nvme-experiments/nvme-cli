@@ -227,14 +227,7 @@ static int lm_track_send(int argc, char **argv, struct command *command, struct 
 			cfg.mos = NVME_SET(NVME_LM_LACT_STOP_LOGGING, LM_LACT);
 	}
 
-	struct nvme_lm_track_send_args args = {
-		.args_size = sizeof(args),
-		.cdqid = cfg.cdqid,
-		.sel = cfg.sel,
-		.mos = cfg.mos,
-	};
-
-	err = nvme_lm_track_send(l, &args);
+	err = nvme_lm_track_send(l, cfg.sel, cfg.mos, cfg.cdqid, NULL);
 	if (err < 0)
 		nvme_show_error("ERROR: nvme_lm_track_send() failed %s", strerror(errno));
 	else if (err)
