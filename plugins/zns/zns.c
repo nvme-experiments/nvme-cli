@@ -1149,25 +1149,9 @@ static int zone_append(int argc, char **argv, struct command *cmd, struct plugin
 	if (cfg.piremap)
 		control |= NVME_IO_ZNS_APPEND_PIREMAP;
 
-	struct nvme_zns_append_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.zslba		= cfg.zslba,
-		.nlb		= nblocks,
-		.control	= control,
-		.ilbrt_u64	= cfg.ref_tag,
-		.lbat		= cfg.lbat,
-		.lbatm		= cfg.lbatm,
-		.data_len	= cfg.data_size,
-		.data		= buf,
-		.metadata_len	= cfg.metadata_size,
-		.metadata	= mbuf,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result		= &result,
-	};
-
 	gettimeofday(&start_time, NULL);
-	err = nvme_zns_append(l, &args);
+	err = nvme_zns_append(l, cfg.namespace_id, cfg.zslba, nblocks, control, cfg.lbat, cfg.lbatm,
+			      cfg.ref_tag, buf, cfg.data_size, mbuf, cfg.metadata_size, &result);
 	gettimeofday(&end_time, NULL);
 	if (cfg.latency)
 		printf(" latency: zone append: %llu us\n",
