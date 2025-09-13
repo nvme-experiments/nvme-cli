@@ -407,6 +407,7 @@ static int lm_migration_recv(int argc, char **argv, struct command *command, str
 	_cleanup_huge_ struct nvme_mem_huge mh = { 0, };
 	nvme_print_flags_t flags;
 	void *data = NULL;
+	__u32 result = 0;
 	int err = -1;
 
 	struct config {
@@ -479,21 +480,10 @@ static int lm_migration_recv(int argc, char **argv, struct command *command, str
 	if (!data)
 		return -ENOMEM;
 
-	__u32 result = 0;
-	struct nvme_lm_migration_recv_args args = {
-		.args_size = sizeof(args),
-		.sel = cfg.sel,
-		.mos = NVME_SET(cfg.csvi, LM_GET_CONTROLLER_STATE_CSVI),
-		.uidx = cfg.uidx,
-		.csuuidi = cfg.csuuidi,
-		.offset = cfg.offset,
-		.cntlid = cfg.cntlid,
-		.numd = cfg.numd,
-		.data = data,
-		.result = &result,
-	};
-
-	err = nvme_lm_migration_recv(l, &args);
+	err = nvme_lm_migration_recv(l, cfg.offset,
+				     NVME_SET(cfg.csvi, LM_GET_CONTROLLER_STATE_CSVI), cfg.cntlid,
+				     cfg.csuuidi, cfg.sel, cfg.uidx, 0, data, (cfg.numd + 1) << 2,
+				     &result);
 	if (err < 0)
 		nvme_show_error("ERROR: nvme_lm_migration_recv() failed %s", strerror(errno));
 	else if (err)
