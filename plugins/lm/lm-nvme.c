@@ -62,6 +62,7 @@ static int lm_create_cdq(int argc, char **argv, struct command *command, struct 
 	_cleanup_nvme_link_ nvme_link_t l = NULL;
 	struct lba_migration_queue_entry_type_0 *queue = NULL;
 	int err = -1;
+	__u16 cdqid;
 
 	struct config {
 		__u32	sz;
@@ -105,22 +106,14 @@ static int lm_create_cdq(int argc, char **argv, struct command *command, struct 
 		return -ENOMEM;
 	}
 
-	struct nvme_lm_cdq_args args = {
-		.args_size = sizeof(args),
-		.sel = NVME_LM_SEL_CREATE_CDQ,
-		.mos = NVME_SET(cfg.qt, LM_QT),
-		.cntlid = cfg.cntlid,
-		.sz = cfg.sz,
-		.data = queue
-	};
-
-	err = nvme_lm_cdq(l, &args);
+	err = nvme_lm_cdq(l, NVME_LM_SEL_CREATE_CDQ, NVME_SET(cfg.qt, LM_QT), cfg.cntlid, cfg.sz,
+			  queue, &cdqid, NULL);
 	if (err < 0)
 		nvme_show_error("ERROR: nvme_lm_cdq() failed: %s", nvme_strerror(errno));
 	else if (err)
 		nvme_show_status(err);
 	else
-		printf("Create CDQ Successful: CDQID=0x%04x\n", args.cdqid);
+		printf("Create CDQ Successful: CDQID=0x%04x\n", cdqid);
 
 	return err;
 }
@@ -151,13 +144,7 @@ static int lm_delete_cdq(int argc, char **argv, struct command *command, struct 
 	if (err)
 		return err;
 
-	struct nvme_lm_cdq_args args = {
-		.args_size = sizeof(args),
-		.sel = NVME_LM_SEL_DELETE_CDQ,
-		.cdqid = cfg.cdqid,
-	};
-
-	err = nvme_lm_cdq(l, &args);
+	err = nvme_lm_cdq(l, NVME_LM_SEL_DELETE_CDQ, 0, 0, 0, NULL, &cfg.cdqid, NULL);
 	if (err < 0)
 		nvme_show_error("ERROR: nvme_lm_cdq() failed: %s", nvme_strerror(errno));
 	else if (err > 0)
