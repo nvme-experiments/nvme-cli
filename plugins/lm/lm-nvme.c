@@ -370,21 +370,9 @@ static int lm_migration_send(int argc, char **argv, struct command *command, str
 		}
 	}
 
-	struct nvme_lm_migration_send_args args = {
-		.args_size = sizeof(args),
-		.sel = cfg.sel,
-		.mos = NVME_SET(cfg.seqind, LM_SEQIND),
-		.cntlid = cfg.cntlid,
-		.csuuidi = cfg.csuuidi,
-		.uidx = cfg.uidx,
-		.stype = cfg.stype,
-		.offset = cfg.offset,
-		.dudmq = cfg.dudmq,
-		.numd = cfg.numd,
-		.data = data,
-	};
-
-	err = nvme_lm_migration_send(l, &args);
+	err = nvme_lm_migration_send(l, cfg.sel, NVME_SET(cfg.seqind, LM_SEQIND), cfg.cntlid,
+				     cfg.stype, cfg.dudmq, 0, cfg.csuuidi, cfg.offset, cfg.uidx,
+				     data, cfg.numd << 2, NULL);
 	if (err < 0)
 		nvme_show_error("ERROR: nvme_lm_migration_send() failed %s", strerror(errno));
 	else if (err > 0)
