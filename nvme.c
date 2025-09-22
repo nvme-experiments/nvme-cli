@@ -8596,7 +8596,7 @@ static int capacity_mgmt(int argc, char **argv, struct command *cmd, struct plug
 	}
 
 	if (cfg.capl || cfg.capu)
-		cfg.cap = cfg.capu << 32 | cfg.capl;
+		cfg.cap = (__u64)cfg.capu << 32 | cfg.capl;
 
 
 	err = nvme_capacity_mgmt(l, cfg.operation, cfg.element_id,
