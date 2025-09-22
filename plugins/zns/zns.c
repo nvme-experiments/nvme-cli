@@ -857,10 +857,8 @@ static int report_zones(int argc, char **argv, struct command *cmd, struct plugi
 		return -ENOMEM;
 	}
 
-	err = nvme_zns_report_zones(l, cfg.namespace_id, 0,
-				    cfg.state, false, false,
-				    log_len, buff,
-				    NVME_DEFAULT_IOCTL_TIMEOUT, NULL);
+	err = nvme_zns_report_zones(l, cfg.namespace_id, 0, cfg.state, false, false, log_len, buff,
+				    NULL);
 	if (err > 0) {
 		nvme_show_status(err);
 		goto free_buff;
@@ -900,11 +898,8 @@ static int report_zones(int argc, char **argv, struct command *cmd, struct plugi
 			log_len = sizeof(struct nvme_zone_report) + ((sizeof(struct nvme_zns_desc) * nr_zones_chunks) + (nr_zones_chunks * zdes));
 		}
 
-		err = nvme_zns_report_zones(l, cfg.namespace_id,
-					    offset,
-					    cfg.state, cfg.extended,
-					    cfg.partial, log_len, report,
-					    NVME_DEFAULT_IOCTL_TIMEOUT, NULL);
+		err = nvme_zns_report_zones(l, cfg.namespace_id, offset, cfg.state, cfg.extended,
+					    cfg.partial, log_len, report, NULL);
 		if (err > 0) {
 			nvme_show_status(err);
 			break;
