@@ -8183,7 +8183,7 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 	elbas = argconfig_parse_seen(opts, "sts") ||
 		argconfig_parse_seen(opts, "pif");
 
-	cdw12 = NVME_SET(nlbocks, IOCS_COMMON_CDW12_NLB) |
+	cdw12 = NVME_SET(nblocks, IOCS_COMMON_CDW12_NLB) |
 		NVME_SET(control, IOCS_COMMON_CDW12_CONTROL);
 	cdw13 = NVME_SET(cfg.dspec, IOCS_COMMON_CDW13_DSPEC) |
 		NVME_SET(cfg.dsmgmt, IOCS_COMMON_CDW13_DSM);
