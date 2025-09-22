@@ -72,12 +72,12 @@
 #include "malloc.h"
 
 struct feat_cfg {
-	enum nvme_features_id feature_id;
-	__u32 namespace_id;
+	enum nvme_features_id fid;
+	__u32 nsid;
 	enum nvme_get_features_sel sel;
 	__u32 cdw11;
 	__u32 cdw12;
-	__u8 uuid_index;
+	__u8 uidx;
 	__u32 data_len;
 	bool raw_binary;
 	bool human_readable;
@@ -4687,11 +4687,11 @@ static int get_feature_id(nvme_link_t l, struct feat_cfg *cfg,
 			  void **buf, __u32 *result)
 {
 	if (!cfg->data_len)
-		nvme_get_feature_length(cfg->feature_id, cfg->cdw11,
+		nvme_get_feature_length(cfg->fid, cfg->cdw11,
 					NVME_DATA_TFR_CTRL_TO_HOST,	
 					&cfg->data_len);
 
-	if (cfg->feature_id == NVME_FEAT_FID_FDP_EVENTS) {
+	if (cfg->fid == NVME_FEAT_FID_FDP_EVENTS) {
 		cfg->data_len = 0xff * sizeof(__u16);
 		cfg->cdw11 |= 0xff << 16;
 	}
@@ -4705,8 +4705,8 @@ static int get_feature_id(nvme_link_t l, struct feat_cfg *cfg,
 			return -1;
 	}
 
-	return nvme_get_features(l, cfg->namespace_id, cfg->feature_id, cfg->sel,
-			cfg->cdw11, cfg->uuid_index, *buf, cfg->data_len, result);
+	return nvme_get_features(l, cfg->nsid, cfg->fid, cfg->sel,
+			cfg->cdw11, cfg->uidx, *buf, cfg->data_len, result);
 }
 
 static int filter_out_flags(int status)
@@ -4723,11 +4723,11 @@ static void get_feature_id_print(struct feat_cfg cfg, int err, __u32 result,
 
 	if (!err) {
 		if (!cfg.raw_binary || !buf) {
-			nvme_feature_show(cfg.feature_id, cfg.sel, result);
+			nvme_feature_show(cfg.fid, cfg.sel, result);
 			if (NVME_CHECK(cfg.sel, GET_FEATURES_SEL, SUPPORTED))
-				nvme_show_select_result(cfg.feature_id, result);
+				nvme_show_select_result(cfg.fid, result);
 			else if (verbose || !strcmp(nvme_cfg.output_format, "json"))
-				nvme_feature_show_fields(cfg.feature_id, result, buf);
+				nvme_feature_show_fields(cfg.fid, result, buf);
 			else if (buf)
 				d(buf, cfg.data_len, 16, 1);
 		} else if (buf) {
@@ -4774,7 +4774,7 @@ static int get_feature_id_changed(nvme_link_t l, struct feat_cfg cfg,
 		err_def = get_feature_id(l, &cfg, &buf_def, &result_def);
 	}
 
-	if (!err && !is_get_feature_result_set(cfg.feature_id))
+	if (!err && !is_get_feature_result_set(cfg.fid))
 		result = cfg.cdw11;
 
 	if (err || !cfg.changed || err_def || result != result_def ||
@@ -4794,11 +4794,11 @@ static int get_feature_ids(nvme_link_t l, struct feat_cfg cfg,
 	int status = 0;
 	enum nvme_status_type type = NVME_STATUS_TYPE_NVME;
 
-	if (cfg.feature_id)
-		feat_max = cfg.feature_id + 1;
+	if (cfg.fid)
+		feat_max = cfg.fid + 1;
 
-	for (i = cfg.feature_id; i < feat_max; i++, feat_num++) {
-		cfg.feature_id = i;
+	for (i = cfg.fid; i < feat_max; i++, feat_num++) {
+		cfg.fid = i;
 		err = get_feature_id_changed(l, cfg, flags);
 		if (!err)
 			continue;
@@ -4807,8 +4807,8 @@ static int get_feature_ids(nvme_link_t l, struct feat_cfg cfg,
 			continue;
 		if (!nvme_status_equals(status, type, NVME_SC_INVALID_NS))
 			break;
-		nvme_show_error_status(err, "get-feature:%#0*x (%s)", cfg.feature_id ? 4 : 2,
-				       cfg.feature_id, nvme_feature_to_string(cfg.feature_id));
+		nvme_show_error_status(err, "get-feature:%#0*x (%s)", cfg.fid ? 4 : 2,
+				       cfg.fid, nvme_feature_to_string(cfg.fid));
 	}
 
 	if (feat_num == 1 && nvme_status_equals(status, type, NVME_SC_INVALID_FIELD))
@@ -4842,24 +4842,24 @@ static int get_feature(int argc, char **argv, struct command *cmd,
 	int err;
 
 	struct feat_cfg cfg = {
-		.feature_id	= 0,
-		.namespace_id	= 0,
+		.fid	= 0,
+		.nsid	= 0,
 		.sel		= NVME_GET_FEATURES_SEL_CURRENT,
 		.data_len	= 0,
 		.raw_binary	= false,
 		.cdw11		= 0,
-		.uuid_index	= 0,
+		.uidx	= 0,
 		.human_readable	= false,
 	};
 
 	NVME_ARGS(opts,
-		  OPT_BYTE("feature-id",     'f', &cfg.feature_id,     feature_id, feature_name),
-		  OPT_UINT("namespace-id",   'n', &cfg.namespace_id,   namespace_id_desired),
+		  OPT_BYTE("feature-id",     'f', &cfg.fid,     feature_id, feature_name),
+		  OPT_UINT("namespace-id",   'n', &cfg.nsid,   namespace_id_desired),
 		  OPT_BYTE("sel",            's', &cfg.sel,            sel),
 		  OPT_UINT("data-len",       'l', &cfg.data_len,       buf_len),
 		  OPT_FLAG("raw-binary",     'b', &cfg.raw_binary,     raw),
 		  OPT_UINT("cdw11",          'c', &cfg.cdw11,          cdw11),
-		  OPT_BYTE("uuid-index",     'U', &cfg.uuid_index,     uuid_index_specify),
+		  OPT_BYTE("uuid-index",     'U', &cfg.uidx,     uuid_index_specify),
 		  OPT_FLAG("human-readable", 'H', &cfg.human_readable, human_readable),
 		  OPT_FLAG("changed",        'C', &cfg.changed,        changed));
 
@@ -4874,13 +4874,13 @@ static int get_feature(int argc, char **argv, struct command *cmd,
 	}
 
 	if (!argconfig_parse_seen(opts, "namespace-id")) {
-		err = nvme_get_nsid(l, &cfg.namespace_id);
+		err = nvme_get_nsid(l, &cfg.nsid);
 		if (err < 0) {
 			if (err != -ENOTTY) {
 				nvme_show_error("get-namespace-id: %s", nvme_strerror(-err));
 				return err;
 			}
-			cfg.namespace_id = NVME_NSID_ALL;
+			cfg.nsid = NVME_NSID_ALL;
 		}
 	}
 
@@ -4889,8 +4889,8 @@ static int get_feature(int argc, char **argv, struct command *cmd,
 		return -EINVAL;
 	}
 
-	if (cfg.uuid_index > 127) {
-		nvme_show_error("invalid uuid index param: %u", cfg.uuid_index);
+	if (cfg.uidx > 127) {
+		nvme_show_error("invalid uuid index param: %u", cfg.uidx);
 		return -1;
 	}
 
