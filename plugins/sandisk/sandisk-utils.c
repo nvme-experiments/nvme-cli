@@ -342,9 +342,9 @@ int sndk_check_ctrl_telemetry_option_disabled(nvme_link_t l)
 	int err;
 	__u32 result;
 
-	err = nvme_get_features_data(l,
+	err = nvme_get_features_data(l, 0,
 		 SNDK_VU_DISABLE_CNTLR_TELEMETRY_OPTION_FEATURE_ID,
-		 0, 4, NULL, &result);
+		 NULL, 4, &result);
 	if (!err) {
 		if (result) {
 			fprintf(stderr,

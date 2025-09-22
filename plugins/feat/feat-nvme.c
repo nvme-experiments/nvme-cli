@@ -66,18 +66,7 @@ static int feat_get(nvme_link_t l, const __u8 fid, __u32 cdw11, __u8 sel, const 
 			return -ENOMEM;
 	}
 
-	struct nvme_get_features_args args = {
-		.args_size = sizeof(args),
-		.fid = fid,
-		.sel = sel,
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result = &result,
-		.cdw11 = cdw11,
-		.data = buf,
-		.data_len = len,
-	};
-
-	err = nvme_get_features(l, &args);
+	err = nvme_get_features(l, 0, fid, sel, cdw11, 0, buf, len, &result);
 
 	nvme_show_init();
 

@@ -4705,19 +4705,8 @@ static int get_feature_id(nvme_link_t l, struct feat_cfg *cfg,
 			return -1;
 	}
 
-	struct nvme_get_features_args args = {
-		.args_size	= sizeof(args),
-		.fid		= cfg->feature_id,
-		.nsid		= cfg->namespace_id,
-		.sel		= cfg->sel,
-		.cdw11		= cfg->cdw11,
-		.uuidx		= cfg->uuid_index,
-		.data_len	= cfg->data_len,
-		.data		= *buf,
-		.timeout	= nvme_cfg.timeout,
-		.result		= result,
-	};
-	return nvme_get_features(l, &args);
+	return nvme_get_features(l, cfg->namespace_id, cfg->feature_id, cfg->sel,
+			cfg->cdw11, cfg->uuid_index, *buf, cfg->data_len, result);
 }
 
 static int filter_out_flags(int status)

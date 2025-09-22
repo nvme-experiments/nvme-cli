@@ -3204,9 +3204,9 @@ static int wdc_do_cap_telemetry_log(nvme_root_t r, nvme_link_t l, const char *fi
 	} else if (type == WDC_TELEMETRY_TYPE_CONTROLLER) {
 		if ((capabilities & WDC_DRIVE_CAP_INTERNAL_LOG) == WDC_DRIVE_CAP_INTERNAL_LOG) {
 			/* Verify the Controller Initiated Option is enabled */
-			err = nvme_get_features_data(l,
+			err = nvme_get_features_data(l, 0,
 						 WDC_VU_DISABLE_CNTLR_TELEMETRY_OPTION_FEATURE_ID,
-						 0, 4, buf, &result);
+						 buf, 4, &result);
 			if (!err) {
 				if (!result) {
 					/* enabled */
@@ -9558,9 +9558,9 @@ static int wdc_vs_telemetry_controller_option(int argc, char **argv, struct comm
 						       WDC_VU_DISABLE_CNTLR_TELEMETRY_OPTION_FEATURE_ID,
 						       false, 0, &result);
 		} else if (cfg.status) {
-			ret = nvme_get_features_simple(l,
+			ret = nvme_get_features_simple(l, 0,
 						       WDC_VU_DISABLE_CNTLR_TELEMETRY_OPTION_FEATURE_ID,
-						       0, &result);
+						       &result);
 			if (!ret) {
 				if (result)
 					fprintf(stderr, "Controller Option Telemetry Log Page State: Disabled\n");
@@ -10244,11 +10244,10 @@ static int wdc_do_drive_essentials(nvme_root_t r, nvme_link_t l,
 		/* skipping  LbaRangeType as it is an optional nvme command and not supported */
 		if (deFeatureIdList[listIdx].featureId == FID_LBA_RANGE_TYPE)
 			continue;
-		ret = nvme_get_features_data(l,
+		ret = nvme_get_features_data(l, WDC_DE_GLOBAL_NSID,
 					     (enum nvme_features_id)deFeatureIdList[listIdx].featureId,
-					     WDC_DE_GLOBAL_NSID,
-					     sizeof(featureIdBuff),
-					     &featureIdBuff, &result);
+					     &featureIdBuff,
+					     sizeof(featureIdBuff), &result);
 
 		if (ret) {
 			fprintf(stderr, "ERROR: WDC: nvme_get_feature id 0x%x failed, ret = %d\n",
@@ -11964,7 +11963,7 @@ static int wdc_vs_temperature_stats(int argc, char **argv,
 	temperature = ((smart_log.temperature[1] << 8) | smart_log.temperature[0]) - 273;
 
 	/* retrieve HCTM Thermal Management Temperatures */
-	nvme_get_features_simple(l, 0x10, 0, &hctm_tmt);
+	nvme_get_features_simple(l, 0, 0x10, &hctm_tmt);
 	temp_tmt1 = ((hctm_tmt >> 16) & 0xffff) ? ((hctm_tmt >> 16) & 0xffff) - 273 : 0;
 	temp_tmt2 = (hctm_tmt & 0xffff) ? (hctm_tmt & 0xffff) - 273 : 0;
 

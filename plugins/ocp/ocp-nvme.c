@@ -458,20 +458,8 @@ static int ocp_get_latency_monitor_feature(int argc, char **argv, struct command
 		}
 	}
 
-	struct nvme_get_features_args args = {
-		.args_size  = sizeof(args),
-		.fid        = OCP_FID_LM,
-		.nsid       = cfg.nsid,
-		.sel        = cfg.sel,
-		.cdw11      = 0,
-		.uuidx      = uuid_index,
-		.data_len   = 0,
-		.data       = NULL,
-		.timeout    = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result     = &result,
-	};
-
-	err = nvme_get_features(l, &args);
+	err = nvme_get_features(l, cfg.nsid, OCP_FID_LM, cfg.sel, 0,
+						 uuid_index, NULL, 0, &result);
 	if (!err) {
 		printf("get-feature:0xC5 %s value: %#08x\n",
 		nvme_select_to_string(cfg.sel), result);
@@ -510,32 +498,20 @@ static const char *eol_plp_failure_mode_to_string(__u8 mode)
 static int eol_plp_failure_mode_get(nvme_link_t l, const __u32 nsid, const __u8 fid,
 				    __u8 sel, bool uuid)
 {
+	__u8 uidx = 0;
 	__u32 result;
 	int err;
 
-	struct nvme_get_features_args args = {
-		.args_size	= sizeof(args),
-		.fid		= fid,
-		.nsid		= nsid,
-		.sel		= sel,
-		.cdw11		= 0,
-		.uuidx		= 0,
-		.data_len	= 0,
-		.data		= NULL,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result		= &result,
-	};
-
 	if (uuid) {
 		/* OCP 2.0 requires UUID index support */
-		err = ocp_get_uuid_index(l, &args.uuidx);
-		if (err || !args.uuidx) {
+		err = ocp_get_uuid_index(l, &uidx);
+		if (err || !uidx) {
 			nvme_show_error("ERROR: No OCP UUID index found");
 			return err;
 		}
 	}
 
-	err = nvme_get_features(l, &args);
+	err = nvme_get_features(l, nsid, fid, sel, 0, uidx, NULL, 0, &result);
 	if (!err) {
 		nvme_show_result("End of Life Behavior (feature: %#0*x): %#0*x (%s: %s)",
 				 fid ? 4 : 2, fid, result ? 10 : 8, result,
@@ -2031,20 +2007,8 @@ static int ocp_get_telemetry_profile_feature(int argc, char **argv, struct comma
 		}
 	}
 
-	struct nvme_get_features_args args = {
-		.args_size  = sizeof(args),
-		.fid        = OCP_FID_TEL_CFG,
-		.nsid       = cfg.nsid,
-		.sel        = cfg.sel,
-		.cdw11      = 0,
-		.uuidx      = uuid_index,
-		.data_len   = 0,
-		.data       = NULL,
-		.timeout    = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result     = &result,
-	};
-
-	err = nvme_get_features(l, &args);
+	err = nvme_get_features(l, cfg.nsid, OCP_FID_TEL_CFG, cfg.sel, 0,
+						 uuid_index, NULL, 0, &result);
 	if (!err) {
 		printf("get-feature:0xC8 %s value: %#08x\n",
 		nvme_select_to_string(cfg.sel), result);
@@ -2158,20 +2122,7 @@ static int get_dssd_power_state(nvme_link_t l, const __u32 nsid,
 		}
 	}
 
-	struct nvme_get_features_args args = {
-		.args_size	= sizeof(args),
-		.fid		= fid,
-		.nsid		= nsid,
-		.sel		= sel,
-		.cdw11		= 0,
-		.uuidx		= uuid_index,
-		.data_len	= 0,
-		.data		= NULL,
-		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result		= &result,
-	};
-
-	err = nvme_get_features(l, &args);
+	err = nvme_get_features(l, nsid, fid, sel, 0, uuid_index, NULL, 0, &result);
 	if (!err) {
 		printf("get-feature:0xC7 %s value: %#08x\n", nvme_select_to_string(sel), result);
 
@@ -2329,21 +2280,8 @@ static int get_plp_health_check_interval(int argc, char **argv, struct command *
 	if (err)
 		return err;
 
-
-	struct nvme_get_features_args args = {
-		.args_size  = sizeof(args),
-		.fid        = OCP_FID_PLPI,
-		.nsid       = nsid,
-		.sel        = cfg.sel,
-		.cdw11      = 0,
-		.uuidx      = 0,
-		.data_len   = 0,
-		.data       = NULL,
-		.timeout    = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result     = &result,
-	};
-
-	err = nvme_get_features(l, &args);
+	err = nvme_get_features(l, nsid, OCP_FID_PLPI, cfg.sel, 0, 0,
+						 NULL, 0, &result);
 	if (!err) {
 		printf("get-feature:0xC6 %s value: %#08x\n", nvme_select_to_string(cfg.sel), result);
 
@@ -2448,21 +2386,7 @@ static int get_dssd_async_event_config(int argc, char **argv, struct command *cm
 	if (err)
 		return err;
 
-
-	struct nvme_get_features_args args = {
-		.args_size  = sizeof(args),
-		.fid        = fid,
-		.nsid       = nsid,
-		.sel        = cfg.sel,
-		.cdw11      = 0,
-		.uuidx      = 0,
-		.data_len   = 0,
-		.data       = NULL,
-		.timeout    = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.result     = &result,
-	};
-
-	err = nvme_get_features(l, &args);
+	err = nvme_get_features(l, nsid, fid, cfg.sel, 0, 0, NULL, 0, &result);
 	if (!err) {
 		printf("get-feature:0xC9 %s value: %#08x\n", nvme_select_to_string(cfg.sel), result);
 
@@ -2690,44 +2614,40 @@ static int fw_activation_history_log(int argc, char **argv, struct command *cmd,
 static int error_injection_get(nvme_link_t l, const __u8 sel, bool uuid)
 {
 	struct erri_get_cq_entry cq_entry;
+	__u32 *result = (__u32 *)&cq_entry;
+	__u32 data_len = 0;
+	__u8 uidx = 0;
 	int err;
 	int i;
 	const __u8 fid = OCP_FID_ERRI;
 
 	_cleanup_free_ struct erri_entry *entry = NULL;
 
-	struct nvme_get_features_args args = {
-		.result = (__u32 *)&cq_entry,
-		.data = entry,
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.sel = sel,
-		.data_len = sizeof(*entry) * ERRI_ENTRIES_MAX,
-		.fid = fid,
-	};
+	data_len = sizeof(*entry) * ERRI_ENTRIES_MAX;
 
 	if (uuid) {
 		/* OCP 2.0 requires UUID index support */
-		err = ocp_get_uuid_index(l, &args.uuidx);
-		if (err || !args.uuidx) {
+		err = ocp_get_uuid_index(l, &uidx);
+		if (err || !uidx) {
 			nvme_show_error("ERROR: No OCP UUID index found");
 			return err;
 		}
 	}
 
-	entry = nvme_alloc(args.data_len);
+	entry = nvme_alloc(data_len);
 	if (!entry) {
 		nvme_show_error("malloc: %s", strerror(errno));
 		return -errno;
 	}
 
-	err = nvme_get_features(l, &args);
+	err = nvme_get_features(l, 0, fid, sel, 0, uidx, entry,
+						 data_len, result);
 	if (!err) {
 		nvme_show_result("Number of Error Injecttions (feature: %#0*x): %#0*x (%s: %d)",
 				 fid ? 4 : 2, fid, cq_entry.nume ? 10 : 8, cq_entry.nume,
 				 nvme_select_to_string(sel), cq_entry.nume);
 		if (sel == NVME_GET_FEATURES_SEL_SUPPORTED)
-			nvme_show_select_result(fid, *args.result);
+			nvme_show_select_result(fid, *result);
 		for (i = 0; i < cq_entry.nume; i++) {
 			printf("Entry: %d, Flags: %x (%s%s), Type: %x (%s), NRTDP: %d\n", i,
 			       entry->flags, entry->enable ? "Enabled" : "Disabled",
@@ -2857,30 +2777,25 @@ static int set_error_injection(int argc, char **argv, struct command *cmd, struc
 static int enable_ieee1667_silo_get(nvme_link_t l, const __u8 sel, bool uuid)
 {
 	struct ieee1667_get_cq_entry cq_entry;
+	__u32 *result = (__u32 *)&cq_entry;
+	__u8 uidx = 0;
 	int err;
 	const __u8 fid = OCP_FID_1667;
 
-	struct nvme_get_features_args args = {
-		.result = (__u32 *)&cq_entry,
-		.args_size = sizeof(args),
-		.timeout = NVME_DEFAULT_IOCTL_TIMEOUT,
-		.sel = sel,
-		.fid = fid,
-	};
-
 	if (uuid) {
 		/* OCP 2.0 requires UUID index support */
-		err = ocp_get_uuid_index(l, &args.uuidx);
-		if (err || !args.uuidx) {
+		err = ocp_get_uuid_index(l, &uidx);
+		if (err || !uidx) {
 			nvme_show_error("ERROR: No OCP UUID index found");
 			return err;
 		}
 	}
 
-	err = nvme_get_features(l, &args);
+	err = nvme_get_features(l, 0, fid, sel, 0, uidx, NULL, 0,
+						 result);
 	if (!err) {
 		if (sel == NVME_GET_FEATURES_SEL_SUPPORTED)
-			nvme_show_select_result(fid, *args.result);
+			nvme_show_select_result(fid, *result);
 		else
 			nvme_show_result("IEEE1667 Sifo Enabled (feature: 0x%02x): 0x%0x (%s: %s)",
 					 fid, cq_entry.enabled, nvme_select_to_string(sel),
