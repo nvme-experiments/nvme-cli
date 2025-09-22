@@ -75,7 +75,8 @@ static int sndk_do_cap_telemetry_log(struct nvme_global_ctx *ctx,
 				return -EINVAL;
 			}
 
-			int err = nvme_get_features_host_behavior(hdl, 0, &prev, &result);
+			nvme_init_get_features_host_behavior(&cmd, 0, &prev);
+			int err = nvme_submit_admin_passthru(hdl, &cmd, &result);
 
 			if (!err && !prev.etdas) {
 				struct nvme_feat_host_behavior da4_enable = prev;
