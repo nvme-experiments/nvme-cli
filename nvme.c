@@ -5529,7 +5529,7 @@ static void *mmap_registers(nvme_link_t l, bool writable)
 	if (writable)
 		prot |= PROT_WRITE;
 
-	sprintf(path, "/sys/class/nvme/%s/device/resource0", nvme_link_get_name(l));
+	sprintf(path, "/sys/class/nvme/%s/device/resource0", basename(nvme_link_get_name(l)));
 	fd = open(path, writable ? O_RDWR : O_RDONLY);
 	if (fd < 0) {
 		if (log_level >= LOG_INFO)
