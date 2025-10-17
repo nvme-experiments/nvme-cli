@@ -18,15 +18,15 @@
 #include "fdp.h"
 
 static int fdp_configs(int argc, char **argv, struct command *cmd,
-		struct plugin *plugin)
+		       struct plugin *plugin)
 {
 	const char *desc = "Get Flexible Data Placement Configurations";
 	const char *egid = "Endurance group identifier";
 	const char *human_readable = "show log in readable format";
 	const char *raw = "use binary output";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	_cleanup_free_ void *log = NULL;
 	struct nvme_fdp_config_log hdr;
 	nvme_print_flags_t flags;
@@ -53,7 +53,7 @@ static int fdp_configs(int argc, char **argv, struct command *cmd,
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -72,7 +72,7 @@ static int fdp_configs(int argc, char **argv, struct command *cmd,
 		return -EINVAL;
 	}
 
-	err = nvme_get_log_fdp_configurations(l, cfg.egid, 0,
+	err = nvme_get_log_fdp_configurations(hdl, cfg.egid, 0,
 			sizeof(hdr), &hdr);
 	if (err) {
 		nvme_show_status(errno);
@@ -83,7 +83,7 @@ static int fdp_configs(int argc, char **argv, struct command *cmd,
 	if (!log)
 		return -ENOMEM;
 
-	err = nvme_get_log_fdp_configurations(l, cfg.egid, 0,
+	err = nvme_get_log_fdp_configurations(hdl, cfg.egid, 0,
 			hdr.size, log);
 	if (err) {
 		nvme_show_status(errno);
@@ -101,8 +101,8 @@ static int fdp_usage(int argc, char **argv, struct command *cmd, struct plugin *
 	const char *egid = "Endurance group identifier";
 	const char *raw = "use binary output";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	_cleanup_free_ void *log = NULL;
 	struct nvme_fdp_ruhu_log hdr;
 	nvme_print_flags_t flags;
@@ -128,7 +128,7 @@ static int fdp_usage(int argc, char **argv, struct command *cmd, struct plugin *
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -139,7 +139,7 @@ static int fdp_usage(int argc, char **argv, struct command *cmd, struct plugin *
 	if (cfg.raw_binary)
 		flags = BINARY;
 
-	err = nvme_get_log_reclaim_unit_handle_usage(l, cfg.egid,
+	err = nvme_get_log_reclaim_unit_handle_usage(hdl, cfg.egid,
 						     0, sizeof(hdr), &hdr);
 	if (err) {
 		nvme_show_status(err);
@@ -151,7 +151,7 @@ static int fdp_usage(int argc, char **argv, struct command *cmd, struct plugin *
 	if (!log)
 		return -ENOMEM;
 
-	err = nvme_get_log_reclaim_unit_handle_usage(l, cfg.egid,
+	err = nvme_get_log_reclaim_unit_handle_usage(hdl, cfg.egid,
 						     0, len, log);
 	if (err) {
 		nvme_show_status(err);
@@ -169,8 +169,8 @@ static int fdp_stats(int argc, char **argv, struct command *cmd, struct plugin *
 	const char *egid = "Endurance group identifier";
 	const char *raw = "use binary output";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	struct nvme_fdp_stats_log stats;
 	nvme_print_flags_t flags;
 	int err;
@@ -194,7 +194,7 @@ static int fdp_stats(int argc, char **argv, struct command *cmd, struct plugin *
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -212,7 +212,7 @@ static int fdp_stats(int argc, char **argv, struct command *cmd, struct plugin *
 
 	memset(&stats, 0x0, sizeof(stats));
 
-	err = nvme_get_log_fdp_stats(l, cfg.egid, 0, sizeof(stats), &stats);
+	err = nvme_get_log_fdp_stats(hdl, cfg.egid, 0, sizeof(stats), &stats);
 	if (err) {
 		nvme_show_status(err);
 		return err;
@@ -230,8 +230,8 @@ static int fdp_events(int argc, char **argv, struct command *cmd, struct plugin 
 	const char *host_events = "Get host events";
 	const char *raw = "use binary output";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	struct nvme_fdp_events_log events;
 	nvme_print_flags_t flags;
 	int err;
@@ -258,7 +258,7 @@ static int fdp_events(int argc, char **argv, struct command *cmd, struct plugin 
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -276,7 +276,7 @@ static int fdp_events(int argc, char **argv, struct command *cmd, struct plugin 
 
 	memset(&events, 0x0, sizeof(events));
 
-	err = nvme_get_log_fdp_events(l, cfg.egid,
+	err = nvme_get_log_fdp_events(hdl, cfg.egid,
 			cfg.host_events, 0, sizeof(events), &events);
 	if (err) {
 		nvme_show_status(err);
@@ -294,8 +294,8 @@ static int fdp_status(int argc, char **argv, struct command *cmd, struct plugin 
 	const char *namespace_id = "Namespace identifier";
 	const char *raw = "use binary output";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	_cleanup_free_ void *buf = NULL;
 	struct nvme_fdp_ruh_status hdr;
 	nvme_print_flags_t flags;
@@ -320,7 +320,7 @@ static int fdp_status(int argc, char **argv, struct command *cmd, struct plugin 
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -332,14 +332,14 @@ static int fdp_status(int argc, char **argv, struct command *cmd, struct plugin 
 		flags = BINARY;
 
 	if (!cfg.namespace_id) {
-		err = nvme_get_nsid(l, &cfg.namespace_id);
+		err = nvme_get_nsid(hdl, &cfg.namespace_id);
 		if (err < 0) {
 			perror("get-namespace-id");
 			return err;
 		}
 	}
 
-	err = nvme_fdp_reclaim_unit_handle_status(l,
+	err = nvme_fdp_reclaim_unit_handle_status(hdl,
 			cfg.namespace_id, sizeof(hdr), &hdr);
 	if (err) {
 		nvme_show_status(err);
@@ -352,7 +352,7 @@ static int fdp_status(int argc, char **argv, struct command *cmd, struct plugin 
 	if (!buf)
 		return -ENOMEM;
 
-	err = nvme_fdp_reclaim_unit_handle_status(l,
+	err = nvme_fdp_reclaim_unit_handle_status(hdl,
 			cfg.namespace_id, len, buf);
 	if (err) {
 		nvme_show_status(err);
@@ -370,8 +370,8 @@ static int fdp_update(int argc, char **argv, struct command *cmd, struct plugin 
 	const char *namespace_id = "Namespace identifier";
 	const char *_pids = "Comma-separated list of placement identifiers to update";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	unsigned short pids[256];
 	__u16 buf[256];
 	int npids;
@@ -392,7 +392,7 @@ static int fdp_update(int argc, char **argv, struct command *cmd, struct plugin 
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -406,7 +406,7 @@ static int fdp_update(int argc, char **argv, struct command *cmd, struct plugin 
 	}
 
 	if (!cfg.namespace_id) {
-		err = nvme_get_nsid(l, &cfg.namespace_id);
+		err = nvme_get_nsid(hdl, &cfg.namespace_id);
 		if (err < 0) {
 			perror("get-namespace-id");
 			return err;
@@ -416,7 +416,7 @@ static int fdp_update(int argc, char **argv, struct command *cmd, struct plugin 
 	for (unsigned int i = 0; i < npids; i++)
 		buf[i] = cpu_to_le16(pids[i]);
 
-	err = nvme_fdp_reclaim_unit_handle_update(l, cfg.namespace_id, npids, buf);
+	err = nvme_fdp_reclaim_unit_handle_update(hdl, cfg.namespace_id, npids, buf);
 	if (err) {
 		nvme_show_status(err);
 		return err;
@@ -436,8 +436,8 @@ static int fdp_set_events(int argc, char **argv, struct command *cmd, struct plu
 	const char *ph = "Placement Handle";
 	const char *save = "specifies that the controller shall save the attribute";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	unsigned short evts[255];
 	__u8 buf[255];
 	int err = -1;
@@ -465,7 +465,7 @@ static int fdp_set_events(int argc, char **argv, struct command *cmd, struct plu
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -482,7 +482,7 @@ static int fdp_set_events(int argc, char **argv, struct command *cmd, struct plu
 	}
 
 	if (!cfg.namespace_id) {
-		err = nvme_get_nsid(l, &cfg.namespace_id);
+		err = nvme_get_nsid(hdl, &cfg.namespace_id);
 		if (err < 0) {
 			if (errno != ENOTTY) {
 				fprintf(stderr, "get-namespace-id: %s\n", nvme_strerror(errno));
@@ -509,7 +509,7 @@ static int fdp_set_events(int argc, char **argv, struct command *cmd, struct plu
 		.result		= NULL,
 	};
 
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(hdl, &args);
 	if (err) {
 		nvme_show_status(err);
 		return err;;
@@ -527,8 +527,8 @@ static int fdp_feature(int argc, char **argv, struct command *cmd, struct plugin
 	const char *endurance_group = "Endurance group ID";
 	const char *disable = "Disable current FDP configuration";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	bool enabling_conf_idx = false;
 	__u32 result;
 	int err = -1;
@@ -563,7 +563,7 @@ static int fdp_feature(int argc, char **argv, struct command *cmd, struct plugin
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -589,7 +589,7 @@ static int fdp_feature(int argc, char **argv, struct command *cmd, struct plugin
 
 		nvme_show_result("Endurance Group                               : %d", cfg.endgid);
 
-		err = nvme_get_features(l, &getf_args);
+		err = nvme_get_features(hdl, &getf_args);
 		if (err) {
 			nvme_show_status(err);
 			return err;
@@ -605,7 +605,7 @@ static int fdp_feature(int argc, char **argv, struct command *cmd, struct plugin
 	setf_args.cdw11		= cfg.endgid;
 	setf_args.cdw12		= cfg.fdpcidx << 8 | (!cfg.disable);
 
-	err = nvme_set_features(l, &setf_args);
+	err = nvme_set_features(hdl, &setf_args);
 	if (err) {
 		nvme_show_status(err);
 		return err;

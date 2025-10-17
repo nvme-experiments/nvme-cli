@@ -208,8 +208,8 @@ static int get_stats(int argc, char **argv, struct command *cmd,
 {
 	const char *desc = "display command latency statistics";
 	struct amzn_latency_log_page log = { 0 };
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	nvme_print_flags_t flags;
 	int err, rc;
 
@@ -226,7 +226,7 @@ static int get_stats(int argc, char **argv, struct command *cmd,
 			"Output Format: normal|json"),
 		OPT_END()};
 
-	rc = parse_and_open(&r, &l, argc, argv, desc, opts);
+	rc = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (rc)
 		return rc;
 
@@ -247,7 +247,7 @@ static int get_stats(int argc, char **argv, struct command *cmd,
 		.result = NULL,
 	};
 
-	rc = nvme_get_log(l, &args);
+	rc = nvme_get_log(hdl, &args);
 	if (rc != 0) {
 		fprintf(stderr, "[ERROR] %s: Failed to get log page, rc = %d",
 			__func__, rc);

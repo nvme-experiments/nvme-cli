@@ -64,7 +64,8 @@ struct huawei_list_element_len {
 	unsigned int array_name;
 };
 
-static int huawei_get_nvme_info(nvme_link_t l, struct huawei_list_item *item, const char *node)
+static int huawei_get_nvme_info(struct nvme_transport_handle *hdl,
+				struct huawei_list_item *item, const char *node)
 {
 	int err;
 	int len;
@@ -72,7 +73,7 @@ static int huawei_get_nvme_info(nvme_link_t l, struct huawei_list_item *item, co
 
 	memset(item, 0, sizeof(*item));
 
-	err = nvme_identify_ctrl(l, &item->ctrl);
+	err = nvme_identify_ctrl(hdl, &item->ctrl);
 	if (err)
 		return err;
 
@@ -84,12 +85,12 @@ static int huawei_get_nvme_info(nvme_link_t l, struct huawei_list_item *item, co
 	}
 
 	item->huawei_device = true;
-	err = nvme_get_nsid(l, &item->nsid);
-	err = nvme_identify_ns(l, item->nsid, &item->ns);
+	err = nvme_get_nsid(hdl, &item->nsid);
+	err = nvme_identify_ns(hdl, item->nsid, &item->ns);
 	if (err)
 		return err;
 
-	err = fstat(nvme_link_get_fd(l), &nvme_stat_info);
+	err = fstat(nvme_transport_handle_get_fd(hdl), &nvme_stat_info);
 	if (err < 0)
 		return err;
 
@@ -291,9 +292,10 @@ static void huawei_print_list_items(struct huawei_list_item *list_items, unsigne
 }
 
 static int huawei_list(int argc, char **argv, struct command *command,
-		struct plugin *plugin)
+		       struct plugin *plugin)
 {
-	_cleanup_nvme_root_ nvme_root_t r = nvme_create_root(stdout, DEFAULT_LOGLEVEL);
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx =
+		nvme_create_global_ctx(stdout, DEFAULT_LOGLEVEL);
 	char path[264];
 	struct dirent **devices;
 	struct huawei_list_item *list_items;
@@ -314,7 +316,7 @@ static int huawei_list(int argc, char **argv, struct command *command,
 		OPT_END()
 	};
 
-	if (!r)
+	if (!ctx)
 		return -ENOMEM;
 
 	ret = argconfig_parse(argc, argv, desc, opts);
@@ -337,16 +339,16 @@ static int huawei_list(int argc, char **argv, struct command *command,
 	}
 
 	for (i = 0; i < n; i++) {
-		_cleanup_nvme_link_ nvme_link_t l = NULL;
+		_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 
 		snprintf(path, sizeof(path), "/dev/%s", devices[i]->d_name);
-		l = nvme_open(r, path);
-		if (!l) {
+		ret = nvme_open(ctx, path, &hdl);
+		if (ret) {
 			fprintf(stderr, "Cannot open device %s: %s\n",
 				path, strerror(errno));
 			continue;
 		}
-		ret = huawei_get_nvme_info(l, &list_items[huawei_num], path);
+		ret = huawei_get_nvme_info(hdl, &list_items[huawei_num], path);
 		if (ret)
 			goto out_free_list_items;
 

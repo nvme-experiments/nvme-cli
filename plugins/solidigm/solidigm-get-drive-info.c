@@ -14,8 +14,8 @@ int sldgm_get_drive_info(int argc, char **argv, struct command *cmd, struct plug
 	const char *desc = "Get drive HW information";
 	const char *FTL_unit_size_str = "FTL_unit_size";
 	char *output_format = "normal";
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	nvme_print_flags_t flags;
 	nvme_ctrl_t c;
 	nvme_ns_t n;
@@ -30,7 +30,7 @@ int sldgm_get_drive_info(int argc, char **argv, struct command *cmd, struct plug
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -40,12 +40,18 @@ int sldgm_get_drive_info(int argc, char **argv, struct command *cmd, struct plug
 		return err;
 	}
 
-	r = nvme_scan(NULL);
-	c = nvme_scan_ctrl(r, nvme_link_get_name(l));
-	n = c ? nvme_ctrl_first_ns(c) : nvme_scan_namespace(nvme_link_get_name(l));
-	if (!n) {
-		nvme_show_error("solidigm-vs-drive-info: drive missing namespace");
-		return -EINVAL;
+	err = nvme_scan(NULL, &ctx);
+	if (err)
+		return err;
+	err = nvme_scan_ctrl(ctx, nvme_transport_handle_get_name(hdl), &c);
+	if (err)
+		n = nvme_ctrl_first_ns(c);
+	else {
+		err = nvme_scan_namespace(nvme_transport_handle_get_name(hdl), &n);
+		if (err) {
+			nvme_show_error("solidigm-vs-drive-info: drive missing namespace");
+			return err;
+		}
 	}
 
 	err = nvme_ns_identify(n, &ns);

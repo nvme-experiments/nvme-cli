@@ -40,8 +40,8 @@ static void show_temp_stats(struct temp_stats *stats)
 
 int sldgm_get_temp_stats_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
 {
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	unsigned char buffer[4096] = {0};
 	__u8 uuid_idx;
 	int err;
@@ -61,11 +61,11 @@ int sldgm_get_temp_stats_log(int argc, char **argv, struct command *cmd, struct 
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
-	sldgm_get_uuid_index(l, &uuid_idx);
+	sldgm_get_uuid_index(hdl, &uuid_idx);
 
 	struct nvme_get_log_args args = {
 		.lpo	= 0,
@@ -84,10 +84,10 @@ int sldgm_get_temp_stats_log(int argc, char **argv, struct command *cmd, struct 
 		.ot	= false,
 	};
 
-	err = nvme_get_log(l, &args);
+	err = nvme_get_log(hdl, &args);
 	if (err > 0) {
 		args.lid = SLDGM_LEGACY_TEMP_STATS_LID;
-		err = nvme_get_log(l, &args);
+		err = nvme_get_log(hdl, &args);
 		if (!err) {
 			uint64_t *guid = (uint64_t *)&buffer[4080];
 

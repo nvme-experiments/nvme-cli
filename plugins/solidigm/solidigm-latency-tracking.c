@@ -42,7 +42,7 @@ struct config {
 };
 
 struct latency_tracker {
-	nvme_link_t link;
+	struct nvme_transport_handle *hdl;
 	__u8 uuid_index;
 	struct config cfg;
 	nvme_print_flags_t print_flags;
@@ -283,7 +283,7 @@ static int latency_tracking_is_enable(struct latency_tracker *lt, __u32 *enabled
 		.timeout	= NVME_DEFAULT_IOCTL_TIMEOUT,
 		.result		= enabled,
 	};
-	return nvme_get_features(lt->link, &args_get);
+	return nvme_get_features(lt->hdl, &args_get);
 }
 
 static int latency_tracking_enable(struct latency_tracker *lt)
@@ -314,7 +314,7 @@ static int latency_tracking_enable(struct latency_tracker *lt)
 		.result		= &result,
 	};
 
-	err = nvme_set_features(lt->link, &args_set);
+	err = nvme_set_features(lt->hdl, &args_set);
 	if (err > 0) {
 		nvme_show_status(err);
 	} else if (err < 0) {
@@ -361,7 +361,7 @@ static int latency_tracker_get_log(struct latency_tracker *lt)
 		.ot	= false,
 	};
 
-	err = nvme_get_log(lt->link, &args);
+	err = nvme_get_log(lt->hdl, &args);
 	if (err)
 		return err;
 
@@ -378,8 +378,8 @@ int solidigm_get_latency_tracking_log(int argc, char **argv, struct command *cmd
 				      struct plugin *plugin)
 {
 	const char *desc = "Get and Parse Solidigm Latency Tracking Statistics log.";
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	__u32 enabled;
 	int err;
 
@@ -403,11 +403,11 @@ int solidigm_get_latency_tracking_log(int argc, char **argv, struct command *cmd
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
-	lt.link = l;
+	lt.hdl = hdl;
 
 	err = validate_output_format(lt.cfg.output_format, &lt.print_flags);
 	if (err < 0) {
@@ -425,7 +425,7 @@ int solidigm_get_latency_tracking_log(int argc, char **argv, struct command *cmd
 		return -EINVAL;
 	}
 
-	sldgm_get_uuid_index(l, &lt.uuid_index);
+	sldgm_get_uuid_index(hdl, &lt.uuid_index);
 
 	err = latency_tracking_enable(&lt);
 	if (err)

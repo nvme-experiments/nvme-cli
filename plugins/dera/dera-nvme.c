@@ -95,7 +95,7 @@ enum dera_device_status
 	DEVICE_STAUTS__OVER_TEMPRATURE = 0x09,
 };
 
-static int nvme_dera_get_device_status(nvme_link_t l, enum dera_device_status *result)
+static int nvme_dera_get_device_status(struct nvme_transport_handle *hdl, enum dera_device_status *result)
 {
 	int err = 0;
 
@@ -107,7 +107,7 @@ static int nvme_dera_get_device_status(nvme_link_t l, enum dera_device_status *r
 		.cdw12 = 0x104,
 	};
 
-	err = nvme_submit_admin_passthru(l, &cmd, NULL);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (!err && result)
 		*result = cmd.result;
 
@@ -116,22 +116,22 @@ static int nvme_dera_get_device_status(nvme_link_t l, enum dera_device_status *r
 
 static int get_status(int argc, char **argv, struct command *cmd, struct plugin *plugin)
 {
-	struct nvme_dera_smart_info_log log;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	enum dera_device_status state = DEVICE_STATUS_FATAL_ERROR;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	char *desc = "Get the Dera device status";
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	struct nvme_dera_smart_info_log log;
 	int err;
 
 	OPT_ARGS(opts) = {
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
-	err = nvme_get_log_simple(l, 0xc0, sizeof(log), &log);
+	err = nvme_get_log_simple(hdl, 0xc0, sizeof(log), &log);
 	if (err)
 		goto exit;
 
@@ -153,7 +153,7 @@ static int get_status(int argc, char **argv, struct command *cmd, struct plugin 
 		"Runtime Low",
 	};
 
-	err = nvme_dera_get_device_status(l, &state);
+	err = nvme_dera_get_device_status(hdl, &state);
 	if (!err) {
 		if (state > 0 && state < 4)
 			printf("device_status                       : %s %d%% completed\n", dev_status[state], log.rebuild_percent);

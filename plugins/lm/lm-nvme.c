@@ -36,7 +36,7 @@
 
 #include "lm-print.h"
 
-static inline const char *arg_str(const char * const *strings, size_t array_size, size_t idx)
+static inline const char * arg_str(const char * const *strings, size_t array_size, size_t idx)
 {
 	if (idx < array_size && strings[idx])
 		return strings[idx];
@@ -58,8 +58,8 @@ static int lm_create_cdq(int argc, char **argv, struct command *command, struct 
 			      "worse.";
 
 	_cleanup_huge_ struct nvme_mem_huge mh = { 0, };
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	struct lba_migration_queue_entry_type_0 *queue = NULL;
 	int err = -1;
 
@@ -87,7 +87,7 @@ static int lm_create_cdq(int argc, char **argv, struct command *command, struct 
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -114,7 +114,7 @@ static int lm_create_cdq(int argc, char **argv, struct command *command, struct 
 		.data = queue
 	};
 
-	err = nvme_lm_cdq(l, &args);
+	err = nvme_lm_cdq(hdl, &args);
 	if (err < 0)
 		nvme_show_error("ERROR: nvme_lm_cdq() failed: %s", nvme_strerror(errno));
 	else if (err)
@@ -130,8 +130,8 @@ static int lm_delete_cdq(int argc, char **argv, struct command *command, struct 
 	const char *desc = "Delete Controller Data Queue";
 	const char *cdqid = "Controller Data Queue ID";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	int err = -1;
 
 	struct config {
@@ -147,7 +147,7 @@ static int lm_delete_cdq(int argc, char **argv, struct command *command, struct 
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -157,7 +157,7 @@ static int lm_delete_cdq(int argc, char **argv, struct command *command, struct 
 		.cdqid = cfg.cdqid,
 	};
 
-	err = nvme_lm_cdq(l, &args);
+	err = nvme_lm_cdq(hdl, &args);
 	if (err < 0)
 		nvme_show_error("ERROR: nvme_lm_cdq() failed: %s", nvme_strerror(errno));
 	else if (err > 0)
@@ -186,8 +186,8 @@ static int lm_track_send(int argc, char **argv, struct command *command, struct 
 	const char *stop = "Equivalent to stop tracking with defaults";
 
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	int err = -1;
 
 	struct config {
@@ -215,7 +215,7 @@ static int lm_track_send(int argc, char **argv, struct command *command, struct 
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -247,7 +247,7 @@ static int lm_track_send(int argc, char **argv, struct command *command, struct 
 		.mos = cfg.mos,
 	};
 
-	err = nvme_lm_track_send(l, &args);
+	err = nvme_lm_track_send(hdl, &args);
 	if (err < 0)
 		nvme_show_error("ERROR: nvme_lm_track_send() failed %s", strerror(errno));
 	else if (err)
@@ -291,8 +291,8 @@ static int lm_migration_send(int argc, char **argv, struct command *command, str
 	const char *numd = "Number of Dwords (NUMD)";
 	const char *input = "Controller State Data input file";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	_cleanup_file_ FILE *file = NULL;
 	_cleanup_huge_ struct nvme_mem_huge mh = { 0, };
 	void *data = NULL;
@@ -341,7 +341,7 @@ static int lm_migration_send(int argc, char **argv, struct command *command, str
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -404,7 +404,7 @@ static int lm_migration_send(int argc, char **argv, struct command *command, str
 		.data = data,
 	};
 
-	err = nvme_lm_migration_send(l, &args);
+	err = nvme_lm_migration_send(hdl, &args);
 	if (err < 0)
 		nvme_show_error("ERROR: nvme_lm_migration_send() failed %s", strerror(errno));
 	else if (err > 0)
@@ -433,8 +433,8 @@ static int lm_migration_recv(int argc, char **argv, struct command *command, str
 	const char *output = "Controller State Data output file";
 	const char *human_readable_info = "show info in readable format";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	_cleanup_file_ FILE *fd = NULL;
 	_cleanup_huge_ struct nvme_mem_huge mh = { 0, };
 	nvme_print_flags_t flags;
@@ -481,7 +481,7 @@ static int lm_migration_recv(int argc, char **argv, struct command *command, str
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -525,7 +525,7 @@ static int lm_migration_recv(int argc, char **argv, struct command *command, str
 		.result = &result,
 	};
 
-	err = nvme_lm_migration_recv(l, &args);
+	err = nvme_lm_migration_recv(hdl, &args);
 	if (err < 0)
 		nvme_show_error("ERROR: nvme_lm_migration_recv() failed %s", strerror(errno));
 	else if (err)
@@ -563,8 +563,8 @@ static int lm_set_cdq(int argc, char **argv, struct command *command, struct plu
 	const char *tpt = "If specified, the slot that causes the controller "
 			  " to issue a CDQ Tail Pointer event";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	int err = -1;
 
 	struct config {
@@ -586,7 +586,7 @@ static int lm_set_cdq(int argc, char **argv, struct command *command, struct plu
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -599,7 +599,7 @@ static int lm_set_cdq(int argc, char **argv, struct command *command, struct plu
 		.cdw13		= cfg.tpt
 	};
 
-	err = nvme_set_features(l, &args);
+	err = nvme_set_features(hdl, &args);
 	if (err < 0)
 		nvme_show_error("ERROR: nvme_set_features() failed %s", nvme_strerror(errno));
 	else if (err)
@@ -616,8 +616,8 @@ static int lm_get_cdq(int argc, char **argv, struct command *command, struct plu
 			   "of a CDQ and specify the configuration of a CDQ Tail event.";
 	const char *cdqid = "Controller Data Queue ID";
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	nvme_print_flags_t flags;
 	int err = -1;
 
@@ -637,7 +637,7 @@ static int lm_get_cdq(int argc, char **argv, struct command *command, struct plu
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -657,7 +657,7 @@ static int lm_get_cdq(int argc, char **argv, struct command *command, struct plu
 		.data_len	= sizeof(data)
 	};
 
-	err = nvme_get_features(l, &args);
+	err = nvme_get_features(hdl, &args);
 	if (err < 0)
 		nvme_show_error("ERROR: nvme_get_features() failed %s", nvme_strerror(errno));
 	else if (err)

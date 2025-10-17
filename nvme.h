@@ -92,14 +92,16 @@ static inline bool nvme_is_multipath(nvme_subsystem_t s)
 void register_extension(struct plugin *plugin);
 
 /*
- * parse_and_open - parses arguments and opens the NVMe device, populating @r, @link
+ * parse_and_open - parses arguments and opens the NVMe device, populating @ctx, @hdl
  */
-int parse_and_open(nvme_root_t *r, nvme_link_t *link, int argc, char **argv,
-		   const char *desc, struct argconfig_commandline_options *clo);
+int parse_and_open(struct nvme_global_ctx **ctx,
+		struct nvme_transport_handle **hdl, int argc, char **argv,
+		const char *desc, struct argconfig_commandline_options *clo);
 
+// TODO: unsure if we need a double ptr here
 static inline DEFINE_CLEANUP_FUNC(
-	cleanup_nvme_link, nvme_link_t, nvme_close)
-#define _cleanup_nvme_link_ __cleanup__(cleanup_nvme_link)
+	cleanup_nvme_transport_handle, struct nvme_transport_handle *, nvme_close)
+#define _cleanup_nvme_transport_handle_ __cleanup__(cleanup_nvme_transport_handle)
 
 extern const char *output_format;
 extern const char *timeout;

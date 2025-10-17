@@ -27,18 +27,18 @@ static const unsigned char ocp_fw_activation_history_guid[GUID_LEN] = {
 int ocp_fw_activation_history_log(int argc, char **argv, struct command *cmd,
 				  struct plugin *plugin)
 {
-	const char *description = "Retrieves the OCP firmware activation history log.";
+	const char *desc = "Retrieves the OCP firmware activation history log.";
 
 	char *format = "normal";
 
-	OPT_ARGS(options) = {
+	OPT_ARGS(opts) = {
 		OPT_FMT("output-format", 'o', &format, "output format : normal | json"),
 		OPT_END()
 	};
 
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
-	int err = parse_and_open(&r, &l, argc, argv, description, options);
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
+	int err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 
 	if (err)
 		return err;
@@ -49,7 +49,7 @@ int ocp_fw_activation_history_log(int argc, char **argv, struct command *cmd,
 	 * Best effort attempt at uuid. Otherwise, assume no index (i.e. 0)
 	 * Log GUID check will ensure correctness of returned data
 	 */
-	ocp_get_uuid_index(l, &uuid_index);
+	ocp_get_uuid_index(hdl, &uuid_index);
 
 	struct fw_activation_history fw_history = { 0 };
 
@@ -70,7 +70,7 @@ int ocp_fw_activation_history_log(int argc, char **argv, struct command *cmd,
 		.ot = false,
 	};
 
-	err = nvme_get_log(l, &args);
+	err = nvme_get_log(hdl, &args);
 
 	if (err)
 		nvme_show_status(err);

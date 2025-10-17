@@ -68,8 +68,8 @@ static void vu_gc_log_show(struct garbage_control_collection_log *payload, const
 int solidigm_get_garbage_collection_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
 {
 	const char *desc = "Get and parse Solidigm vendor specific garbage collection event log.";
-	_cleanup_nvme_root_ nvme_root_t r = NULL;
-	_cleanup_nvme_link_ nvme_link_t l = NULL;
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	nvme_print_flags_t flags;
 	int err;
 	__u8 uuid_index;
@@ -87,7 +87,7 @@ int solidigm_get_garbage_collection_log(int argc, char **argv, struct command *c
 		OPT_END()
 	};
 
-	err = parse_and_open(&r, &l, argc, argv, desc, opts);
+	err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts);
 	if (err)
 		return err;
 
@@ -97,7 +97,7 @@ int solidigm_get_garbage_collection_log(int argc, char **argv, struct command *c
 		return -EINVAL;
 	}
 
-	sldgm_get_uuid_index(l, &uuid_index);
+	sldgm_get_uuid_index(hdl, &uuid_index);
 
 	struct garbage_control_collection_log gc_log;
 	const int solidigm_vu_gc_log_id = 0xfd;
@@ -118,14 +118,14 @@ int solidigm_get_garbage_collection_log(int argc, char **argv, struct command *c
 		.ot = false,
 	};
 
-	err =  nvme_get_log(l, &args);
+	err =  nvme_get_log(hdl, &args);
 	if (!err) {
 		if (flags & BINARY)
 			d_raw((unsigned char *)&gc_log, sizeof(gc_log));
 		else if (flags & JSON)
-			vu_gc_log_show_json(&gc_log, nvme_link_get_name(l));
+			vu_gc_log_show_json(&gc_log, nvme_transport_handle_get_name(hdl));
 		else
-			vu_gc_log_show(&gc_log, nvme_link_get_name(l), uuid_index);
+			vu_gc_log_show(&gc_log, nvme_transport_handle_get_name(hdl), uuid_index);
 	} else if (err > 0) {
 		nvme_show_status(err);
 	}
