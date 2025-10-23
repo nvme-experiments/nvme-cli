@@ -758,9 +758,11 @@ static int netapp_smdevices_get_info(struct nvme_transport_handle *hdl,
 				     struct smdevice_info *item,
 				     const char *dev)
 {
+	struct nvme_passthru_cmd cmd;
 	int err;
 
-	err = nvme_identify_ctrl(hdl, &item->ctrl);
+	nvme_init_identify_ctrl(&cmd, &item->ctrl);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err) {
 		fprintf(stderr,
 			"Identify Controller failed to %s (%s)\n", dev,
@@ -773,7 +775,11 @@ static int netapp_smdevices_get_info(struct nvme_transport_handle *hdl,
 		return 0; /* not the right model of controller */
 
 	err = nvme_get_nsid(hdl, &item->nsid);
-	err = nvme_identify_ns(hdl, item->nsid, &item->ns);
+	if (err)
+		return err;
+
+	nvme_init_identify_ns(&cmd, item->nsid, &item->ns);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err) {
 		fprintf(stderr,
 			"Unable to identify namespace for %s (%s)\n",
@@ -790,10 +796,12 @@ static int netapp_ontapdevices_get_info(struct nvme_transport_handle *hdl,
 					struct ontapdevice_info *item,
 					const char *dev)
 {
-	int err;
+	struct nvme_passthru_cmd cmd;
 	void *nsdescs;
+	int err;
 
-	err = nvme_identify_ctrl(hdl, &item->ctrl);
+	nvme_init_identify_ctrl(&cmd, &item->ctrl);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err) {
 		fprintf(stderr, "Identify Controller failed to %s (%s)\n",
 			dev, err < 0 ? strerror(-err) :
@@ -807,7 +815,8 @@ static int netapp_ontapdevices_get_info(struct nvme_transport_handle *hdl,
 
 	err = nvme_get_nsid(hdl, &item->nsid);
 
-	err = nvme_identify_ns(hdl, item->nsid, &item->ns);
+	nvme_init_identify_ns(&cmd, item->nsid, &item->ns);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err) {
 		fprintf(stderr, "Unable to identify namespace for %s (%s)\n",
 			dev, err < 0 ? strerror(-err) :
@@ -822,7 +831,8 @@ static int netapp_ontapdevices_get_info(struct nvme_transport_handle *hdl,
 
 	memset(nsdescs, 0, 0x1000);
 
-	err = nvme_identify_ns_descs(hdl, item->nsid, nsdescs);
+	nvme_init_identify_ns_descs_list(&cmd, item->nsid, nsdescs);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err) {
 		fprintf(stderr, "Unable to identify namespace descriptor for %s (%s)\n",
 			dev, err < 0 ? strerror(-err) :

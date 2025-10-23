@@ -24,6 +24,7 @@ static void get_ymtc_smart_info(struct nvme_ymtc_smart_log *smart, int index, u8
 static int show_ymtc_smart_log(struct nvme_transport_handle *hdl, __u32 nsid,
 			       struct nvme_ymtc_smart_log *smart)
 {
+	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	char fw_ver[10];
 	int err = 0;
@@ -39,7 +40,8 @@ static int show_ymtc_smart_log(struct nvme_transport_handle *hdl, __u32 nsid,
 		free(nm);
 		return -1;
 	}
-	err = nvme_identify_ctrl(hdl, &ctrl);
+	nvme_init_identify_ctrl(&cmd, &ctrl);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err) {
 		free(nm);
 		free(raw);

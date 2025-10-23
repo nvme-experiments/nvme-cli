@@ -355,11 +355,13 @@ static void show_memblaze_smart_log_old(struct nvme_memblaze_smart_log *smart,
 static int show_memblaze_smart_log(struct nvme_transport_handle *hdl, __u32 nsid,
 	const char *devname, struct nvme_memblaze_smart_log *smart)
 {
+	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	char fw_ver[10];
 	int err = 0;
 
-	err = nvme_identify_ctrl(hdl, &ctrl);
+	nvme_init_identify_ctrl(&cmd, &ctrl);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err)
 		return err;
 

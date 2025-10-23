@@ -215,9 +215,11 @@ static int read_header(struct nvme_passthru_cmd *cmd, struct nvme_transport_hand
 static int get_serial_number(char *str, struct nvme_transport_handle *hdl)
 {
 	struct nvme_id_ctrl ctrl = {0};
+	struct nvme_passthru_cmd cmd;
 	int err;
 
-	err = nvme_identify_ctrl(hdl, &ctrl);
+	nvme_init_identify_ctrl(&cmd, &ctrl);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err)
 		return err;
 
@@ -494,8 +496,11 @@ static int ilog_dump_identify_page(struct nvme_transport_handle *hdl, struct ilo
 	__u8 data[NVME_IDENTIFY_DATA_SIZE];
 	__u8 *buff = cns->buffer ? cns->buffer : data;
 	_cleanup_free_ char *filename = NULL;
-	int err = nvme_identify_cns_nsid(hdl, cns->id, nsid, buff);
+	struct nvme_passthru_cmd cmd;
+	int err;
 
+	nvme_init_identify(&cmd, nsid, NVME_CSI_NVM, cns->id, buff, 0);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err)
 		return err;
 

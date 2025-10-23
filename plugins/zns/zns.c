@@ -119,8 +119,9 @@ static int id_ctrl(int argc, char **argv, struct command *acmd, struct plugin *p
 
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	nvme_print_flags_t flags;
+	struct nvme_passthru_cmd cmd;
 	struct nvme_zns_id_ctrl ctrl;
+	nvme_print_flags_t flags;
 	int err = -1;
 
 	struct config {
@@ -144,7 +145,8 @@ static int id_ctrl(int argc, char **argv, struct command *acmd, struct plugin *p
 	if (err < 0)
 		return err;
 
-	err = nvme_zns_identify_ctrl(hdl, &ctrl);
+	nvme_init_zns_identify_ctrl(&cmd, &ctrl);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (!err)
 		nvme_show_zns_id_ctrl(&ctrl, flags);
 	else if (err > 0)
@@ -165,6 +167,7 @@ static int id_ns(int argc, char **argv, struct command *acmd, struct plugin *plu
 
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
+	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	struct nvme_zns_id_ns ns;
 	struct nvme_id_ns id_ns;
@@ -209,13 +212,15 @@ static int id_ns(int argc, char **argv, struct command *acmd, struct plugin *plu
 		}
 	}
 
-	err = nvme_identify_ns(hdl, cfg.namespace_id, &id_ns);
+	nvme_init_identify_ns(&cmd, cfg.namespace_id, &id_ns);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err) {
 		nvme_show_status(err);
 		return err;
 	}
 
-	err = nvme_zns_identify_ns(hdl, cfg.namespace_id, &ns);
+	nvme_init_zns_identify_ns(&cmd, cfg.namespace_id, &ns);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (!err)
 		nvme_show_zns_id_ns(&ns, &id_ns, flags);
 	else if (err > 0)
@@ -303,12 +308,14 @@ free:
 
 static int get_zdes_bytes(struct nvme_transport_handle *hdl, __u32 nsid)
 {
+	struct nvme_passthru_cmd cmd;
 	struct nvme_zns_id_ns ns;
 	struct nvme_id_ns id_ns;
 	__u8 lbaf;
 	int err;
 
-	err = nvme_identify_ns(hdl, nsid, &id_ns);
+	nvme_init_identify_ns(&cmd, nsid, &id_ns);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err > 0) {
 		nvme_show_status(err);
 		return -1;
@@ -317,7 +324,8 @@ static int get_zdes_bytes(struct nvme_transport_handle *hdl, __u32 nsid)
 		return -1;
 	}
 
-	err = nvme_zns_identify_ns(hdl, nsid,  &ns);
+	nvme_init_zns_identify_ns(&cmd, nsid,  &ns);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err > 0) {
 		nvme_show_status(err);
 		return -1;
@@ -818,6 +826,7 @@ static int report_zones(int argc, char **argv, struct command *acmd, struct plug
 
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
+	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	int zdes = 0, err = -1;
 	__u32 report_size;
@@ -888,13 +897,15 @@ static int report_zones(int argc, char **argv, struct command *acmd, struct plug
 			return zdes;
 	}
 
-	err = nvme_identify_ns(hdl, cfg.namespace_id, &id_ns);
+	nvme_init_identify_ns(&cmd, cfg.namespace_id, &id_ns);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err) {
 		nvme_show_status(err);
 		return err;
 	}
 
-	err = nvme_zns_identify_ns(hdl, cfg.namespace_id, &id_zns);
+	nvme_init_zns_identify_ns(&cmd, cfg.namespace_id, &id_zns);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (!err) {
 		/* get zsze field from zns id ns data - needed for offset calculation */
 		nvme_id_ns_flbas_to_lbaf_inuse(id_ns.flbas, &lbaf);
@@ -1003,6 +1014,7 @@ static int zone_append(int argc, char **argv, struct command *acmd, struct plugi
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	unsigned int lba_size, meta_size;
 	void *buf = NULL, *mbuf = NULL;
+	struct nvme_passthru_cmd cmd;
 	__u16 nblocks, control = 0;
 	__u64 result;
 	__u8 lba_index;
@@ -1064,7 +1076,8 @@ static int zone_append(int argc, char **argv, struct command *acmd, struct plugi
 		}
 	}
 
-	err = nvme_identify_ns(hdl, cfg.namespace_id, &ns);
+	nvme_init_identify_ns(&cmd, cfg.namespace_id, &ns);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err) {
 		nvme_show_status(err);
 		return err;

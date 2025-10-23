@@ -168,18 +168,21 @@ void wdc_StrFormat(char *formatter, size_t fmt_sz, char *tofmt, size_t tofmtsz)
 bool wdc_CheckUuidListSupport(struct nvme_transport_handle *hdl,
 			      struct nvme_id_uuid_list *uuid_list)
 {
-	int err;
+	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
+	int err;
 
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
-	err = nvme_identify_ctrl(hdl, &ctrl);
+	nvme_init_identify_ctrl(&cmd, &ctrl);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err) {
 		fprintf(stderr, "ERROR: WDC: nvme_identify_ctrl() failed 0x%x\n", err);
 		return false;
 	}
 
 	if ((ctrl.ctratt & NVME_CTRL_CTRATT_UUID_LIST) == NVME_CTRL_CTRATT_UUID_LIST) {
-		err = nvme_identify_uuid(hdl, uuid_list);
+		nvme_init_identify_uuid_list(&cmd, uuid_list);
+		err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 		if (!err)
 			return true;
 		else if (err > 0)

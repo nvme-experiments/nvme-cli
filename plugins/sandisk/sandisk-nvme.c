@@ -33,6 +33,7 @@ static int sndk_do_cap_telemetry_log(struct nvme_global_ctx *ctx,
 				     const char *file, __u32 bs, int type,
 				     int data_area)
 {
+	struct nvme_passthru_cmd cmd;
 	struct nvme_telemetry_log *log;
 	size_t full_size = 0;
 	int err = 0, output;
@@ -48,7 +49,8 @@ static int sndk_do_cap_telemetry_log(struct nvme_global_ctx *ctx,
 	int ret;
 
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
-	err = nvme_identify_ctrl(hdl, &ctrl);
+	nvme_init_identify_ctrl(&cmd, &ctrl);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (err) {
 		fprintf(stderr, "ERROR: WDC: nvme_identify_ctrl() failed 0x%x\n", err);
 		return err;

@@ -202,6 +202,7 @@ int solidigm_get_log_page_directory_log(int argc, char **argv, struct command *a
 
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
+	struct nvme_passthru_cmd cmd;
 
 	int err = parse_and_open(&ctx, &hdl, argc, argv, description, options);
 	if (err)
@@ -217,7 +218,8 @@ int solidigm_get_log_page_directory_log(int argc, char **argv, struct command *a
 		lid_dirs[NO_UUID_INDEX] = get_standard_lids(&supported);
 
 		// Assume VU logs are the Solidigm log pages if UUID not supported.
-		if (nvme_identify_uuid(hdl, &uuid_list)) {
+		nvme_init_identify_uuid_list(&cmd, &uuid_list);
+		if (!nvme_submit_admin_passthru(hdl, &cmd, NULL)) {
 			struct lid_dir *solidigm_lid_dir = get_solidigm_lids(&supported);
 
 			// Transfer supported Solidigm lids to lid directory at UUID index 0
