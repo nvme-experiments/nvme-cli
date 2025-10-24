@@ -292,7 +292,7 @@ static int ocp_latency_monitor_log(int argc, char **argv,
 	return ret;
 }
 
-int ocp_set_latency_monitor_feature(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+int ocp_set_latency_monitor_feature(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	int err = -1;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
@@ -422,7 +422,7 @@ int ocp_set_latency_monitor_feature(int argc, char **argv, struct command *cmd, 
 	return err;
 }
 
-static int ocp_get_latency_monitor_feature(int argc, char **argv, struct command *cmd,
+static int ocp_get_latency_monitor_feature(int argc, char **argv, struct command *acmd,
 					   struct plugin *plugin)
 {
 	const char *desc = "Define Issue Get Feature command (FID: 0xC5) Latency Monitor";
@@ -609,7 +609,7 @@ static int eol_plp_failure_mode_set(struct nvme_transport_handle *hdl, const __u
 	return err;
 }
 
-static int eol_plp_failure_mode(int argc, char **argv, struct command *cmd,
+static int eol_plp_failure_mode(int argc, char **argv, struct command *acmd,
 				struct plugin *plugin)
 {
 	const char *desc = "Define EOL or PLP circuitry failure mode.\n"
@@ -1470,7 +1470,7 @@ int parse_ocp_telemetry_log(struct ocp_telemetry_parse_options *options)
 	return 0;
 }
 
-static int ocp_telemetry_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int ocp_telemetry_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve and parse OCP Telemetry log.";
 	const char *telemetry_log = "Telemetry log binary;\n 'host.bin' or 'controller.bin'";
@@ -1637,7 +1637,7 @@ static __u8 unsupported_req_guid[GUID_LEN] = {
 };
 
 /* Function declaration for unsupported requirement log page (LID:C5h) */
-static int ocp_unsupported_requirements_log(int argc, char **argv, struct command *cmd,
+static int ocp_unsupported_requirements_log(int argc, char **argv, struct command *acmd,
 					    struct plugin *plugin);
 
 static int get_c5_log_page(struct nvme_transport_handle *hdl, char *format)
@@ -1695,7 +1695,7 @@ out:
 	return ret;
 }
 
-static int ocp_unsupported_requirements_log(int argc, char **argv, struct command *cmd,
+static int ocp_unsupported_requirements_log(int argc, char **argv, struct command *acmd,
 					    struct plugin *plugin)
 {
 	const char *desc = "Retrieve unsupported requirements log data.";
@@ -1743,7 +1743,7 @@ static __u8 error_recovery_guid[GUID_LEN] = {
 };
 
 static int get_c1_log_page(struct nvme_transport_handle *hdl, char *format);
-static int ocp_error_recovery_log(int argc, char **argv, struct command *cmd, struct plugin *plugin);
+static int ocp_error_recovery_log(int argc, char **argv, struct command *acmd, struct plugin *plugin);
 
 static int get_c1_log_page(struct nvme_transport_handle *hdl, char *format)
 {
@@ -1800,7 +1800,7 @@ out:
 	return ret;
 }
 
-static int ocp_error_recovery_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int ocp_error_recovery_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve C1h Error Recovery Log data.";
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
@@ -1846,7 +1846,7 @@ static __u8 dev_cap_req_guid[GUID_LEN] = {
 };
 
 static int get_c4_log_page(struct nvme_transport_handle *hdl, char *format);
-static int ocp_device_capabilities_log(int argc, char **argv, struct command *cmd, struct plugin *plugin);
+static int ocp_device_capabilities_log(int argc, char **argv, struct command *acmd, struct plugin *plugin);
 
 static int get_c4_log_page(struct nvme_transport_handle *hdl, char *format)
 {
@@ -1903,7 +1903,7 @@ out:
 	return ret;
 }
 
-static int ocp_device_capabilities_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int ocp_device_capabilities_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve C4h Device Capabilities Log data.";
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
@@ -1982,7 +1982,7 @@ static int ocp_set_telemetry_profile(struct nvme_transport_handle *hdl, __u8 tps
 	return err;
 }
 
-static int ocp_set_telemetry_profile_feature(int argc, char **argv, struct command *cmd,
+static int ocp_set_telemetry_profile_feature(int argc, char **argv, struct command *acmd,
 					     struct plugin *plugin)
 {
 	const char *desc = "Set Telemetry Profile (Feature Identifier C8h) Set Feature.";
@@ -2021,7 +2021,7 @@ static int ocp_set_telemetry_profile_feature(int argc, char **argv, struct comma
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 /// DSSD Power State (Feature Identifier C8h) Get Feature
-static int ocp_get_telemetry_profile_feature(int argc, char **argv, struct command *cmd,
+static int ocp_get_telemetry_profile_feature(int argc, char **argv, struct command *acmd,
 					      struct plugin *plugin)
 {
 	const char *desc = "Define Issue Get Feature command (FID: 0xC8) Latency Monitor";
@@ -2148,7 +2148,7 @@ static int set_dssd_power_state(struct nvme_transport_handle *hdl, const __u32 n
 	return err;
 }
 
-static int set_dssd_power_state_feature(int argc, char **argv, struct command *cmd,
+static int set_dssd_power_state_feature(int argc, char **argv, struct command *acmd,
 										struct plugin *plugin)
 {
 	const char *desc = "Define DSSD Power State (Feature Identifier C7h) Set Feature.";
@@ -2235,7 +2235,7 @@ static int get_dssd_power_state(struct nvme_transport_handle *hdl, const __u32 n
 	return err;
 }
 
-static int get_dssd_power_state_feature(int argc, char **argv, struct command *cmd,
+static int get_dssd_power_state_feature(int argc, char **argv, struct command *acmd,
 										struct plugin *plugin)
 {
 	const char *desc = "Define DSSD Power State (Feature Identifier C7h) Get Feature.";
@@ -2290,7 +2290,7 @@ static int get_dssd_power_state_feature(int argc, char **argv, struct command *c
 ///////////////////////////////////////////////////////////////////////////////
 /// plp_health_check_interval
 
-static int set_plp_health_check_interval(int argc, char **argv, struct command *cmd,
+static int set_plp_health_check_interval(int argc, char **argv, struct command *acmd,
 					 struct plugin *plugin)
 {
 
@@ -2365,7 +2365,7 @@ static int set_plp_health_check_interval(int argc, char **argv, struct command *
 	return err;
 }
 
-static int get_plp_health_check_interval(int argc, char **argv, struct command *cmd,
+static int get_plp_health_check_interval(int argc, char **argv, struct command *acmd,
 					 struct plugin *plugin)
 {
 
@@ -2427,7 +2427,7 @@ static int get_plp_health_check_interval(int argc, char **argv, struct command *
 ///////////////////////////////////////////////////////////////////////////////
 /// dssd_async_event_config
 
-static int set_dssd_async_event_config(int argc, char **argv, struct command *cmd,
+static int set_dssd_async_event_config(int argc, char **argv, struct command *acmd,
 				       struct plugin *plugin)
 {
 
@@ -2497,7 +2497,7 @@ static int set_dssd_async_event_config(int argc, char **argv, struct command *cm
 	return err;
 }
 
-static int get_dssd_async_event_config(int argc, char **argv, struct command *cmd,
+static int get_dssd_async_event_config(int argc, char **argv, struct command *acmd,
 				       struct plugin *plugin)
 {
 
@@ -2561,7 +2561,7 @@ static int get_dssd_async_event_config(int argc, char **argv, struct command *cm
 /// Telemetry String Log Format Log Page (LID : C9h)
 
 /* Function declaration for Telemetry String Log Format (LID:C9h) */
-static int ocp_telemetry_str_log_format(int argc, char **argv, struct command *cmd,
+static int ocp_telemetry_str_log_format(int argc, char **argv, struct command *acmd,
 					struct plugin *plugin);
 
 static int get_c9_log_page(struct nvme_transport_handle *hdl, char *format)
@@ -2590,7 +2590,7 @@ static int get_c9_log_page(struct nvme_transport_handle *hdl, char *format)
 	return ret;
 }
 
-static int ocp_telemetry_str_log_format(int argc, char **argv, struct command *cmd,
+static int ocp_telemetry_str_log_format(int argc, char **argv, struct command *acmd,
 					struct plugin *plugin)
 {
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
@@ -2640,7 +2640,7 @@ static __u8 tcg_configuration_guid[GUID_LEN] = {
 };
 
 /* Function declaration for TCG Configuration log page (LID:C7h) */
-static int ocp_tcg_configuration_log(int argc, char **argv, struct command *cmd,
+static int ocp_tcg_configuration_log(int argc, char **argv, struct command *acmd,
 					    struct plugin *plugin);
 
 static int get_c7_log_page(struct nvme_transport_handle *hdl, char *format)
@@ -2698,7 +2698,7 @@ out:
 	return ret;
 }
 
-static int ocp_tcg_configuration_log(int argc, char **argv, struct command *cmd,
+static int ocp_tcg_configuration_log(int argc, char **argv, struct command *acmd,
 					    struct plugin *plugin)
 {
 	const char *desc = "Retrieve TCG Configuration Log Page Data";
@@ -2737,33 +2737,33 @@ static int ocp_tcg_configuration_log(int argc, char **argv, struct command *cmd,
 /// Misc
 
 static int clear_fw_update_history(int argc, char **argv,
-				   struct command *cmd, struct plugin *plugin)
+				   struct command *command, struct plugin *plugin)
 {
-	return ocp_clear_fw_update_history(argc, argv, cmd, plugin);
+	return ocp_clear_fw_update_history(argc, argv, command, plugin);
 }
 
-static int smart_add_log(int argc, char **argv, struct command *cmd,
+static int smart_add_log(int argc, char **argv, struct command *acmd,
 			 struct plugin *plugin)
 {
-	return ocp_smart_add_log(argc, argv, cmd, plugin);
+	return ocp_smart_add_log(argc, argv, acmd, plugin);
 }
 
-static int clear_pcie_correctable_error_counters(int argc, char **argv, struct command *cmd,
+static int clear_pcie_correctable_error_counters(int argc, char **argv, struct command *acmd,
 						struct plugin *plugin)
 {
-	return ocp_clear_pcie_correctable_errors(argc, argv, cmd, plugin);
+	return ocp_clear_pcie_correctable_errors(argc, argv, acmd, plugin);
 }
 
-static int get_clear_pcie_correctable_error_counters(int argc, char **argv, struct command *cmd,
+static int get_clear_pcie_correctable_error_counters(int argc, char **argv, struct command *acmd,
 						      struct plugin *plugin)
 {
-	return get_ocp_error_counters(argc, argv, cmd, plugin);
+	return get_ocp_error_counters(argc, argv, acmd, plugin);
 }
 
-static int fw_activation_history_log(int argc, char **argv, struct command *cmd,
+static int fw_activation_history_log(int argc, char **argv, struct command *acmd,
 				     struct plugin *plugin)
 {
-	return ocp_fw_activation_history_log(argc, argv, cmd, plugin);
+	return ocp_fw_activation_history_log(argc, argv, acmd, plugin);
 }
 
 static int error_injection_get(struct nvme_transport_handle *hdl, const __u8 sel, bool uuid)
@@ -2820,7 +2820,7 @@ static int error_injection_get(struct nvme_transport_handle *hdl, const __u8 sel
 	return err;
 }
 
-static int get_error_injection(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_error_injection(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Return set of error injection";
 	int err;
@@ -2915,7 +2915,7 @@ static int error_injection_set(struct nvme_transport_handle *hdl, struct erri_co
 	return 0;
 }
 
-static int set_error_injection(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int set_error_injection(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Inject error conditions";
 	int err;
@@ -2978,7 +2978,7 @@ static int enable_ieee1667_silo_get(struct nvme_transport_handle *hdl, const __u
 	return err;
 }
 
-static int get_enable_ieee1667_silo(int argc, char **argv, struct command *cmd,
+static int get_enable_ieee1667_silo(int argc, char **argv, struct command *acmd,
 				    struct plugin *plugin)
 {
 	const char *desc = "return set of enable IEEE1667 silo";
@@ -3046,7 +3046,7 @@ static int enable_ieee1667_silo_set(struct nvme_transport_handle *hdl,
 	return err;
 }
 
-static int set_enable_ieee1667_silo(int argc, char **argv, struct command *cmd,
+static int set_enable_ieee1667_silo(int argc, char **argv, struct command *acmd,
 				    struct plugin *plugin)
 {
 	int err;
@@ -3068,7 +3068,7 @@ static int set_enable_ieee1667_silo(int argc, char **argv, struct command *cmd,
 	return enable_ieee1667_silo_set(hdl, opts);
 }
 
-static int hwcomp_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int hwcomp_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
-	return ocp_hwcomp_log(argc, argv, cmd, plugin);
+	return ocp_hwcomp_log(argc, argv, acmd, plugin);
 }

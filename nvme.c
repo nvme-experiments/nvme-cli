@@ -473,7 +473,7 @@ bool nvme_is_output_format_json(void)
 	return flags == JSON;
 }
 
-static int get_smart_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_smart_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve SMART log for the given device "
 		"(or optionally a namespace) in either decoded format "
@@ -536,7 +536,7 @@ static int get_smart_log(int argc, char **argv, struct command *cmd, struct plug
 	return err;
 }
 
-static int get_ana_log(int argc, char **argv, struct command *cmd,
+static int get_ana_log(int argc, char **argv, struct command *acmd,
 		struct plugin *plugin)
 {
 	const char *desc = "Retrieve ANA log for the given device in "
@@ -808,7 +808,7 @@ static int __get_telemetry_log_host(struct nvme_transport_handle *hdl,
 	return get_log_telemetry_host(hdl, *size, buf);
 }
 
-static int get_telemetry_log(int argc, char **argv, struct command *cmd,
+static int get_telemetry_log(int argc, char **argv, struct command *acmd,
 			     struct plugin *plugin)
 {
 	const char *desc = "Retrieve telemetry log and write to binary file";
@@ -941,7 +941,7 @@ static int get_telemetry_log(int argc, char **argv, struct command *cmd,
 	return err;
 }
 
-static int get_endurance_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_endurance_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieves endurance groups log page and prints the log.";
 	const char *group_id = "The endurance group identifier";
@@ -1012,7 +1012,7 @@ static int collect_effects_log(struct nvme_transport_handle *hdl, enum nvme_csi 
 	return 0;
 }
 
-static int get_effects_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_effects_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve command effects log page and print the table.";
 
@@ -1110,7 +1110,7 @@ cleanup_list:
 	return err;
 }
 
-static int get_supported_log_pages(int argc, char **argv, struct command *cmd,
+static int get_supported_log_pages(int argc, char **argv, struct command *acmd,
 	struct plugin *plugin)
 {
 	const char *desc = "Retrieve supported logs and print the table.";
@@ -1151,7 +1151,7 @@ static int get_supported_log_pages(int argc, char **argv, struct command *cmd,
 	return err;
 }
 
-static int get_error_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_error_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve specified number of "
 		"error log entries from a given device "
@@ -1224,7 +1224,7 @@ static int get_error_log(int argc, char **argv, struct command *cmd, struct plug
 	return err;
 }
 
-static int get_fw_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_fw_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve the firmware log for the "
 		"specified device in either decoded format (default) or binary.";
@@ -1335,20 +1335,20 @@ static int get_changed_ns_list_log(int argc, char **argv, bool alloc)
 	return err;
 }
 
-static int get_changed_attach_ns_list_log(int argc, char **argv, struct command *cmd,
+static int get_changed_attach_ns_list_log(int argc, char **argv, struct command *acmd,
 					  struct plugin *plugin)
 {
 	return get_changed_ns_list_log(argc, argv, false);
 }
 
-static int get_changed_alloc_ns_list_log(int argc, char **argv, struct command *cmd,
+static int get_changed_alloc_ns_list_log(int argc, char **argv, struct command *acmd,
 					 struct plugin *plugin)
 {
 	return get_changed_ns_list_log(argc, argv, true);
 }
 
 static int get_pred_lat_per_nvmset_log(int argc, char **argv,
-	struct command *cmd, struct plugin *plugin)
+	struct command *command, struct plugin *plugin)
 {
 	const char *desc = "Retrieve Predictable latency per nvm set log "
 		"page and prints it for the given device in either decoded "
@@ -1407,7 +1407,7 @@ static int get_pred_lat_per_nvmset_log(int argc, char **argv,
 }
 
 static int get_pred_lat_event_agg_log(int argc, char **argv,
-		struct command *cmd, struct plugin *plugin)
+		struct command *command, struct plugin *plugin)
 {
 	const char *desc = "Retrieve Predictable Latency Event "
 		"Aggregate Log page and prints it, for the given "
@@ -1492,7 +1492,7 @@ static int get_pred_lat_event_agg_log(int argc, char **argv,
 }
 
 static int get_persistent_event_log(int argc, char **argv,
-		struct command *cmd, struct plugin *plugin)
+		struct command *command, struct plugin *plugin)
 {
 	const char *desc = "Retrieve Persistent Event log info for "
 		"the given device in either decoded format(default), json or binary.";
@@ -1613,7 +1613,7 @@ static int get_persistent_event_log(int argc, char **argv,
 }
 
 static int get_endurance_event_agg_log(int argc, char **argv,
-		struct command *cmd, struct plugin *plugin)
+		struct command *command, struct plugin *plugin)
 {
 	const char *desc = "Retrieve Retrieve Predictable Latency "
 		"Event Aggregate page and prints it, for the given "
@@ -1698,7 +1698,7 @@ static int get_endurance_event_agg_log(int argc, char **argv,
 }
 
 static int get_lba_status_log(int argc, char **argv,
-		struct command *cmd, struct plugin *plugin)
+		struct command *command, struct plugin *plugin)
 {
 	const char *desc = "Retrieve Get LBA Status Info Log and prints it, "
 		"for the given device in either decoded format(default),json or binary.";
@@ -1757,7 +1757,7 @@ static int get_lba_status_log(int argc, char **argv,
 }
 
 static int get_resv_notif_log(int argc, char **argv,
-	struct command *cmd, struct plugin *plugin)
+	struct command *command, struct plugin *plugin)
 {
 
 	const char *desc = "Retrieve Reservation Notification "
@@ -1798,7 +1798,7 @@ static int get_resv_notif_log(int argc, char **argv,
 
 }
 
-static int get_boot_part_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_boot_part_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve Boot Partition "
 		"log page and prints it, for the given "
@@ -1895,7 +1895,7 @@ static int get_boot_part_log(int argc, char **argv, struct command *cmd, struct 
 	return err;
 }
 
-static int get_phy_rx_eom_log(int argc, char **argv, struct command *cmd,
+static int get_phy_rx_eom_log(int argc, char **argv, struct command *acmd,
 		struct plugin *plugin)
 {
 	const char *desc = "Retrieve Physical Interface Receiver Eye Opening "
@@ -1988,7 +1988,7 @@ static int get_phy_rx_eom_log(int argc, char **argv, struct command *cmd,
 	return err;
 }
 
-static int get_media_unit_stat_log(int argc, char **argv, struct command *cmd,
+static int get_media_unit_stat_log(int argc, char **argv, struct command *acmd,
 				   struct plugin *plugin)
 {
 	const char *desc = "Retrieve the configuration and wear of media units and print it";
@@ -2041,7 +2041,7 @@ static int get_media_unit_stat_log(int argc, char **argv, struct command *cmd,
 	return err;
 }
 
-static int get_supp_cap_config_log(int argc, char **argv, struct command *cmd,
+static int get_supp_cap_config_log(int argc, char **argv, struct command *acmd,
 				   struct plugin *plugin)
 {
 	const char *desc = "Retrieve the list of Supported Capacity Configuration Descriptors";
@@ -2095,7 +2095,7 @@ static int get_supp_cap_config_log(int argc, char **argv, struct command *cmd,
 	return err;
 }
 
-static int io_mgmt_send(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int io_mgmt_send(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "I/O Management Send";
 	const char *data = "optional file for data (default stdin)";
@@ -2179,7 +2179,7 @@ static int io_mgmt_send(int argc, char **argv, struct command *cmd, struct plugi
 	return err;
 }
 
-static int io_mgmt_recv(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int io_mgmt_recv(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "I/O Management Receive";
 	const char *data = "optional file for data (default stdout)";
@@ -2266,7 +2266,7 @@ static int io_mgmt_recv(int argc, char **argv, struct command *cmd, struct plugi
 	return err;
 }
 
-static int get_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve desired number of bytes "
 		"from a given log on a specified device in either "
@@ -2453,7 +2453,7 @@ static int get_log(int argc, char **argv, struct command *cmd, struct plugin *pl
 	return err;
 }
 
-static int sanitize_log(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int sanitize_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve sanitize log and show it.";
 
@@ -2511,7 +2511,7 @@ static int sanitize_log(int argc, char **argv, struct command *command, struct p
 	return err;
 }
 
-static int get_fid_support_effects_log(int argc, char **argv, struct command *cmd,
+static int get_fid_support_effects_log(int argc, char **argv, struct command *acmd,
 	struct plugin *plugin)
 {
 	const char *desc = "Retrieve FID Support and Effects log and show it.";
@@ -2561,7 +2561,7 @@ static int get_fid_support_effects_log(int argc, char **argv, struct command *cm
 	return err;
 }
 
-static int get_mi_cmd_support_effects_log(int argc, char **argv, struct command *cmd,
+static int get_mi_cmd_support_effects_log(int argc, char **argv, struct command *acmd,
 	struct plugin *plugin)
 {
 	const char *desc = "Retrieve NVMe-MI Command Support and Effects log and show it.";
@@ -2611,7 +2611,7 @@ static int get_mi_cmd_support_effects_log(int argc, char **argv, struct command 
 	return err;
 }
 
-static int list_ctrl(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int list_ctrl(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Show controller list information for the subsystem the "
 		"given device is part of, or optionally controllers attached to a specific namespace.";
@@ -2666,7 +2666,7 @@ static int list_ctrl(int argc, char **argv, struct command *cmd, struct plugin *
 	return err;
 }
 
-static int list_ns(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int list_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "For the specified controller handle, show the "
 		"namespace list in the associated NVMe subsystem, optionally starting with a given nsid.";
@@ -2745,7 +2745,7 @@ static int list_ns(int argc, char **argv, struct command *cmd, struct plugin *pl
 	return err;
 }
 
-static int id_ns_lba_format(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int id_ns_lba_format(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send an Identify Namespace command to the given "
 		"device, returns capability field properties of the specified "
@@ -2801,7 +2801,7 @@ static int id_ns_lba_format(int argc, char **argv, struct command *cmd, struct p
 	return err;
 }
 
-static int id_endurance_grp_list(int argc, char **argv, struct command *cmd,
+static int id_endurance_grp_list(int argc, char **argv, struct command *acmd,
 	struct plugin *plugin)
 {
 	const char *desc = "Show endurance group list information for the given endurance group id";
@@ -2886,7 +2886,7 @@ static void ns_mgmt_show_status(struct nvme_transport_handle *hdl, int err, char
 	nvme_show_finish();
 }
 
-static int delete_ns(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int delete_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Delete the given namespace by "
 		"sending a namespace management command to "
@@ -2933,12 +2933,12 @@ static int delete_ns(int argc, char **argv, struct command *cmd, struct plugin *
 	}
 
 	err = nvme_ns_mgmt_delete(hdl, cfg.namespace_id);
-	ns_mgmt_show_status(hdl, err, cmd->name, cfg.namespace_id);
+	ns_mgmt_show_status(hdl, err, acmd->name, cfg.namespace_id);
 
 	return err;
 }
 
-static int nvme_attach_ns(int argc, char **argv, int attach, const char *desc, struct command *cmd)
+static int nvme_attach_ns(int argc, char **argv, int attach, const char *desc, struct command *acmd)
 {
 	_cleanup_free_ struct nvme_ctrl_list *cntlist = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
@@ -2975,20 +2975,20 @@ static int nvme_attach_ns(int argc, char **argv, int attach, const char *desc, s
 	}
 
 	if (nvme_transport_handle_is_blkdev(hdl)) {
-		nvme_show_error("%s: a block device opened (dev: %s, nsid: %d)", cmd->name,
+		nvme_show_error("%s: a block device opened (dev: %s, nsid: %d)", acmd->name,
 				nvme_transport_handle_get_name(hdl), cfg.namespace_id);
 		return -EINVAL;
 	}
 
 	if (!cfg.namespace_id) {
-		nvme_show_error("%s: namespace-id parameter required", cmd->name);
+		nvme_show_error("%s: namespace-id parameter required", acmd->name);
 		return -EINVAL;
 	}
 
 	num = argconfig_parse_comma_sep_array_u16(cfg.cntlist,
 						  list, ARRAY_SIZE(list));
 	if (num == -1) {
-		nvme_show_error("%s: controller id list is malformed", cmd->name);
+		nvme_show_error("%s: controller id list is malformed", acmd->name);
 		return -EINVAL;
 	}
 
@@ -3017,12 +3017,12 @@ static int nvme_attach_ns(int argc, char **argv, int attach, const char *desc, s
 		err = nvme_ns_detach_ctrls(hdl, cfg.namespace_id,
 					   cntlist);
 
-	ns_mgmt_show_status(hdl, err, cmd->name, cfg.namespace_id);
+	ns_mgmt_show_status(hdl, err, acmd->name, cfg.namespace_id);
 
 	return err;
 }
 
-static int attach_ns(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int attach_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Attach the given namespace to the "
 		"given controller or comma-sep list of controllers. ID of the "
@@ -3030,17 +3030,17 @@ static int attach_ns(int argc, char **argv, struct command *cmd, struct plugin *
 		"controller. A namespace must be attached to a controller "
 		"before IO commands may be directed to that namespace.";
 
-	return nvme_attach_ns(argc, argv, 1, desc, cmd);
+	return nvme_attach_ns(argc, argv, 1, desc, acmd);
 }
 
-static int detach_ns(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int detach_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Detach the given namespace from the "
 		"given controller; de-activates the given namespace's ID. A "
 		"namespace must be attached to a controller before IO "
 		"commands may be directed to that namespace.";
 
-	return nvme_attach_ns(argc, argv, 0, desc, cmd);
+	return nvme_attach_ns(argc, argv, 0, desc, acmd);
 }
 
 static int parse_lba_num_si(struct nvme_transport_handle *hdl, const char *opt,
@@ -3141,7 +3141,7 @@ static int parse_lba_num_si(struct nvme_transport_handle *hdl, const char *opt,
 	return 0;
 }
 
-static int create_ns(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int create_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send a namespace management command "
 		"to the specified device to create a namespace with the given "
@@ -3399,7 +3399,7 @@ parse_lba:
 		data->phndl[i] = cpu_to_le16(phndl[i]);
 
 	err = nvme_ns_mgmt_create(hdl, NULL, &nsid, nvme_cfg.timeout, cfg.csi, data);
-	ns_mgmt_show_status(hdl, err, cmd->name, nsid);
+	ns_mgmt_show_status(hdl, err, acmd->name, nsid);
 
 	return err;
 }
@@ -3430,7 +3430,7 @@ static bool nvme_match_device_filter(nvme_subsystem_t s,
 	return false;
 }
 
-static int list_subsys(int argc, char **argv, struct command *cmd,
+static int list_subsys(int argc, char **argv, struct command *acmd,
 		struct plugin *plugin)
 {
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
@@ -3490,7 +3490,7 @@ static int list_subsys(int argc, char **argv, struct command *cmd,
 	return 0;
 }
 
-static int list(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int list(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve basic information for all NVMe namespaces";
 	nvme_print_flags_t flags;
@@ -3528,7 +3528,7 @@ static int list(int argc, char **argv, struct command *cmd, struct plugin *plugi
 	return err;
 }
 
-int __id_ctrl(int argc, char **argv, struct command *cmd, struct plugin *plugin,
+int __id_ctrl(int argc, char **argv, struct command *acmd, struct plugin *plugin,
 		void (*vs)(__u8 *vs, struct json_object *root))
 {
 	const char *desc = "Send an Identify Controller command to "
@@ -3595,12 +3595,12 @@ int __id_ctrl(int argc, char **argv, struct command *cmd, struct plugin *plugin,
 	return err;
 }
 
-static int id_ctrl(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int id_ctrl(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
-	return __id_ctrl(argc, argv, cmd, plugin, NULL);
+	return __id_ctrl(argc, argv, acmd, plugin, NULL);
 }
 
-static int nvm_id_ctrl(int argc, char **argv, struct command *cmd,
+static int nvm_id_ctrl(int argc, char **argv, struct command *acmd,
 	struct plugin *plugin)
 {
 	const char *desc = "Send an Identify Controller NVM Command Set "
@@ -3643,7 +3643,7 @@ static int nvm_id_ctrl(int argc, char **argv, struct command *cmd,
 	return err;
 }
 
-static int nvm_id_ns(int argc, char **argv, struct command *cmd,
+static int nvm_id_ns(int argc, char **argv, struct command *acmd,
 	struct plugin *plugin)
 {
 	const char *desc = "Send an Identify Namespace NVM Command Set "
@@ -3719,7 +3719,7 @@ static int nvm_id_ns(int argc, char **argv, struct command *cmd,
 	return err;
 }
 
-static int nvm_id_ns_lba_format(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int nvm_id_ns_lba_format(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send an NVM Command Set specific Identify Namespace "
 		"command to the given device, returns capability field properties of "
@@ -3785,7 +3785,7 @@ static int nvm_id_ns_lba_format(int argc, char **argv, struct command *cmd, stru
 	return err;
 }
 
-static int ns_descs(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int ns_descs(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send Namespace Identification Descriptors command to the "
 		"given device, returns the namespace identification descriptors "
@@ -3851,7 +3851,7 @@ static int ns_descs(int argc, char **argv, struct command *cmd, struct plugin *p
 	return err;
 }
 
-static int id_ns(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int id_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send an Identify Namespace command to the "
 		"given device, returns properties of the specified namespace "
@@ -3935,7 +3935,7 @@ static int id_ns(int argc, char **argv, struct command *cmd, struct plugin *plug
 	return err;
 }
 
-static int cmd_set_independent_id_ns(int argc, char **argv, struct command *cmd,
+static int cmd_set_independent_id_ns(int argc, char **argv, struct command *acmd,
 				     struct plugin *plugin)
 {
 	const char *desc = "Send an I/O Command Set Independent Identify "
@@ -4005,7 +4005,7 @@ static int cmd_set_independent_id_ns(int argc, char **argv, struct command *cmd,
 	return err;
 }
 
-static int id_ns_granularity(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int id_ns_granularity(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send an Identify Namespace Granularity List command to the "
 		"given device, returns namespace granularity list "
@@ -4044,7 +4044,7 @@ static int id_ns_granularity(int argc, char **argv, struct command *cmd, struct 
 	return err;
 }
 
-static int id_nvmset(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int id_nvmset(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send an Identify NVM Set List command to the "
 		"given device, returns entries for NVM Set identifiers greater "
@@ -4094,7 +4094,7 @@ static int id_nvmset(int argc, char **argv, struct command *cmd, struct plugin *
 	return err;
 }
 
-static int id_uuid(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int id_uuid(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send an Identify UUID List command to the "
 		"given device, returns list of supported Vendor Specific UUIDs "
@@ -4153,7 +4153,7 @@ static int id_uuid(int argc, char **argv, struct command *cmd, struct plugin *pl
 	return err;
 }
 
-static int id_iocs(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int id_iocs(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send an Identify Command Set Data command to "
 		"the given device, returns properties of the specified controller "
@@ -4207,7 +4207,7 @@ static int id_iocs(int argc, char **argv, struct command *cmd, struct plugin *pl
 	return err;
 }
 
-static int id_domain(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int id_domain(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send an Identify Domain List command to the "
 		"given device, returns properties of the specified domain "
@@ -4259,7 +4259,7 @@ static int id_domain(int argc, char **argv, struct command *cmd, struct plugin *
 	return err;
 }
 
-static int get_ns_id(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_ns_id(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Get namespace ID of a the block device.";
 
@@ -4292,7 +4292,7 @@ static int get_ns_id(int argc, char **argv, struct command *cmd, struct plugin *
 	return 0;
 }
 
-static int virtual_mgmt(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int virtual_mgmt(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "The Virtualization Management command is supported by primary controllers "
 		"that support the Virtualization Enhancements capability. This command is used for:\n"
@@ -4359,7 +4359,7 @@ static int virtual_mgmt(int argc, char **argv, struct command *cmd, struct plugi
 	return err;
 }
 
-static int primary_ctrl_caps(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int primary_ctrl_caps(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *cntlid = "Controller ID";
 	const char *desc = "Send an Identify Primary Controller Capabilities "
@@ -4415,7 +4415,7 @@ static int primary_ctrl_caps(int argc, char **argv, struct command *cmd, struct 
 	return err;
 }
 
-static int list_secondary_ctrl(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int list_secondary_ctrl(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc =
 	    "Show secondary controller list associated with the primary controller of the given device.";
@@ -4568,7 +4568,7 @@ static void abort_self_test(struct nvme_transport_handle *hdl, struct nvme_dev_s
 		nvme_show_error("Device self-test: %s", nvme_strerror(-err));
 }
 
-static int device_self_test(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int device_self_test(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Implementing the device self-test feature "
 		"which provides the necessary log to determine the state of the device";
@@ -4677,7 +4677,7 @@ check_abort:
 	return err;
 }
 
-static int self_test_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int self_test_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve the self-test log for the given device and given test "
 		"(or optionally a namespace) in either decoded format (default) or binary.";
@@ -4874,7 +4874,7 @@ static int get_feature_ids(struct nvme_transport_handle *hdl, struct feat_cfg cf
 	return err;
 }
 
-static int get_feature(int argc, char **argv, struct command *cmd,
+static int get_feature(int argc, char **argv, struct command *acmd,
 		       struct plugin *plugin)
 {
 	const char *desc = "Read operating parameters of the "
@@ -5060,7 +5060,7 @@ static int fw_download_single(struct nvme_transport_handle *hdl, void *fw_buf,
 	return -1;
 }
 
-static int fw_download(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int fw_download(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Copy all or part of a firmware image to "
 		"a controller for future update. Optionally, specify how "
@@ -5236,7 +5236,7 @@ static void fw_commit_print_mud(struct nvme_transport_handle *hdl, __u32 result)
 		       "sequence due to processing a command from a Management Endpoint\n");
 }
 
-static int fw_commit(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int fw_commit(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Verify downloaded firmware image and "
 		"commit to specific firmware slot. Device is not automatically "
@@ -5340,7 +5340,7 @@ static int fw_commit(int argc, char **argv, struct command *cmd, struct plugin *
 	return err;
 }
 
-static int subsystem_reset(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int subsystem_reset(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Resets the NVMe subsystem";
 
@@ -5366,7 +5366,7 @@ static int subsystem_reset(int argc, char **argv, struct command *cmd, struct pl
 	return err;
 }
 
-static int reset(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int reset(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Resets the NVMe controller\n";
 
@@ -5389,7 +5389,7 @@ static int reset(int argc, char **argv, struct command *cmd, struct plugin *plug
 	return err;
 }
 
-static int ns_rescan(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int ns_rescan(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Rescans the NVMe namespaces\n";
 
@@ -5419,7 +5419,7 @@ static int ns_rescan(int argc, char **argv, struct command *cmd, struct plugin *
 	return err;
 }
 
-static int sanitize_cmd(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int sanitize_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send a sanitize command.";
 	const char *emvs_desc = "Enter media verification state.";
@@ -5645,7 +5645,7 @@ static void *mmap_registers(struct nvme_transport_handle *hdl, bool writable)
 	return membase;
 }
 
-static int show_registers(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int show_registers(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Reads and shows the defined NVMe controller registers\n"
 		"in binary or human-readable format";
@@ -5875,7 +5875,7 @@ static bool get_register_offset(void *bar, bool fabrics, struct get_reg_config *
 	return offset_matched;
 }
 
-static int get_register(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_register(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Reads and shows the defined NVMe controller register.\n"
 		"Register offset must be one of:\n"
@@ -6219,7 +6219,7 @@ static int set_register_names(struct nvme_transport_handle *hdl, void *bar, stru
 	return 0;
 }
 
-static int set_register(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int set_register(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Writes and shows the defined NVMe controller register";
 	const char *value = "the value of the register to be set";
@@ -6277,7 +6277,7 @@ static int set_register(int argc, char **argv, struct command *cmd, struct plugi
 	return err;
 }
 
-static int get_property(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_property(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Reads and shows the defined NVMe controller property\n"
 		"for NVMe over Fabric. Property offset must be one of:\n"
@@ -6326,7 +6326,7 @@ static int get_property(int argc, char **argv, struct command *cmd, struct plugi
 	return err;
 }
 
-static int set_property(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int set_property(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc =
 	    "Writes and shows the defined NVMe controller property for NVMe over Fabric";
@@ -6389,7 +6389,7 @@ static void show_relatives(const char *name, nvme_print_flags_t flags)
 	nvme_show_relatives(ctx, name, flags);
 }
 
-static int format_cmd(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int format_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Re-format a specified namespace on the\n"
 		"given device. Can erase all data in namespace (user\n"
@@ -6652,7 +6652,7 @@ static int format_cmd(int argc, char **argv, struct command *cmd, struct plugin 
 #define STRTOUL_AUTO_BASE              (0)
 #define NVME_FEAT_TIMESTAMP_DATA_SIZE  (6)
 
-static int set_feature(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int set_feature(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Modify the saveable or changeable "
 		"current operating parameters of the controller. "
@@ -6817,7 +6817,7 @@ static int set_feature(int argc, char **argv, struct command *cmd, struct plugin
 	return err;
 }
 
-static int sec_send(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int sec_send(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	struct stat sb;
 	const char *desc = "Transfer security protocol data to\n"
@@ -6935,7 +6935,7 @@ static int sec_send(int argc, char **argv, struct command *cmd, struct plugin *p
 	return err;
 }
 
-static int dir_send(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int dir_send(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Set directive parameters of the specified directive type.";
 	const char *endir = "directive enable";
@@ -7078,7 +7078,7 @@ static int dir_send(int argc, char **argv, struct command *cmd, struct plugin *p
 	return err;
 }
 
-static int write_uncor(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int write_uncor(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc =
 	    "The Write Uncorrectable command is used to set a range of logical blocks to invalid.";
@@ -7195,7 +7195,7 @@ static void get_pif_sts(struct nvme_id_ns *ns, struct nvme_nvm_id_ns *nvm_ns, __
 		*pif = (elbaf & NVME_NVM_ELBAF_QPIF_MASK) >> 9;
 }
 
-static int write_zeroes(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int write_zeroes(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	_cleanup_free_ struct nvme_nvm_id_ns *nvm_ns = NULL;
 	_cleanup_free_ struct nvme_id_ns *ns = NULL;
@@ -7360,7 +7360,7 @@ static int write_zeroes(int argc, char **argv, struct command *cmd, struct plugi
 	return err;
 }
 
-static int dsm(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int dsm(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "The Dataset Management command is used by the host to\n"
 		"indicate attributes for ranges of logical blocks. This includes attributes\n"
@@ -7470,7 +7470,7 @@ static int dsm(int argc, char **argv, struct command *cmd, struct plugin *plugin
 	return err;
 }
 
-static int copy_cmd(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int copy_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "The Copy command is used by the host to copy data\n"
 		"from one or more source logical block ranges to a\n"
@@ -7674,7 +7674,7 @@ static int copy_cmd(int argc, char **argv, struct command *cmd, struct plugin *p
 	return err;
 }
 
-static int flush_cmd(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int flush_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Commit data and metadata associated with\n"
 		"given namespaces to nonvolatile media. Applies to all commands\n"
@@ -7720,7 +7720,7 @@ static int flush_cmd(int argc, char **argv, struct command *cmd, struct plugin *
 	return err;
 }
 
-static int resv_acquire(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int resv_acquire(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Obtain a reservation on a given\n"
 		"namespace. Only one reservation is allowed at a time on a\n"
@@ -7805,7 +7805,7 @@ static int resv_acquire(int argc, char **argv, struct command *cmd, struct plugi
 	return err;
 }
 
-static int resv_register(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int resv_register(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Register, de-register, or\n"
 		"replace a controller's reservation on a given namespace.\n"
@@ -7893,7 +7893,7 @@ static int resv_register(int argc, char **argv, struct command *cmd, struct plug
 	return err;
 }
 
-static int resv_release(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int resv_release(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Releases reservation held on a\n"
 		"namespace by the given controller. If rtype != current reservation\n"
@@ -7976,7 +7976,7 @@ static int resv_release(int argc, char **argv, struct command *cmd, struct plugi
 	return err;
 }
 
-static int resv_report(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int resv_report(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Returns Reservation Status data\n"
 		"structure describing any existing reservations on and the\n"
@@ -8437,7 +8437,7 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 	return err;
 }
 
-static int compare(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int compare(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Compare specified logical blocks on\n"
 		"device with specified data buffer; return failure if buffer\n"
@@ -8446,7 +8446,7 @@ static int compare(int argc, char **argv, struct command *cmd, struct plugin *pl
 	return submit_io(nvme_cmd_compare, "compare", desc, argc, argv);
 }
 
-static int read_cmd(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int read_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Copy specified logical blocks on the given\n"
 		"device to specified data buffer (default buffer is stdout).";
@@ -8454,7 +8454,7 @@ static int read_cmd(int argc, char **argv, struct command *cmd, struct plugin *p
 	return submit_io(nvme_cmd_read, "read", desc, argc, argv);
 }
 
-static int write_cmd(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int write_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Copy from provided data buffer (default\n"
 		"buffer is stdin) to specified logical blocks on the given device.";
@@ -8462,7 +8462,7 @@ static int write_cmd(int argc, char **argv, struct command *cmd, struct plugin *
 	return submit_io(nvme_cmd_write, "write", desc, argc, argv);
 }
 
-static int verify_cmd(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int verify_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	_cleanup_free_ struct nvme_nvm_id_ns *nvm_ns = NULL;
 	_cleanup_free_ struct nvme_id_ns *ns = NULL;
@@ -8596,7 +8596,7 @@ static int verify_cmd(int argc, char **argv, struct command *cmd, struct plugin 
 	return err;
 }
 
-static int sec_recv(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int sec_recv(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Obtain results of one or more\n"
 		"previously submitted security-sends. Results, and association\n"
@@ -8688,7 +8688,7 @@ static int sec_recv(int argc, char **argv, struct command *cmd, struct plugin *p
 	return err;
 }
 
-static int get_lba_status(int argc, char **argv, struct command *cmd,
+static int get_lba_status(int argc, char **argv, struct command *acmd,
 		struct plugin *plugin)
 {
 	const char *desc = "Information about potentially unrecoverable LBAs.";
@@ -8773,7 +8773,7 @@ static int get_lba_status(int argc, char **argv, struct command *cmd,
 	return err;
 }
 
-static int capacity_mgmt(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int capacity_mgmt(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Host software uses the Capacity Management command to\n"
 		"configure Endurance Groups and NVM Sets in an NVM subsystem by either\n"
@@ -8853,7 +8853,7 @@ static int capacity_mgmt(int argc, char **argv, struct command *cmd, struct plug
 	return err;
 }
 
-static int dir_receive(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int dir_receive(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Read directive parameters of the specified directive type.";
 	const char *nsr = "namespace stream requested";
@@ -8974,12 +8974,12 @@ static int dir_receive(int argc, char **argv, struct command *cmd, struct plugin
 
 /* rpmb_cmd_option is defined in nvme-rpmb.c */
 extern int rpmb_cmd_option(int, char **, struct command *, struct plugin *);
-static int rpmb_cmd(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int rpmb_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
-	return rpmb_cmd_option(argc, argv, cmd, plugin);
+	return rpmb_cmd_option(argc, argv, acmd, plugin);
 }
 
-static int lockdown_cmd(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int lockdown_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "The Lockdown command is used to control the\n"
 		"Command and Feature Lockdown capability which configures the\n"
@@ -9096,7 +9096,7 @@ static void passthru_print_read_output(struct passthru_config cfg, void *data, i
 }
 
 static int passthru(int argc, char **argv, bool admin,
-		const char *desc, struct command *cmd)
+		const char *desc, struct command *acmd)
 {
 	const char *opcode = "opcode (required)";
 	const char *cflags = "command flags";
@@ -9193,7 +9193,7 @@ static int passthru(int argc, char **argv, bool admin,
 	}
 
 	if (!argconfig_parse_seen(opts, "opcode")) {
-		nvme_show_error("%s: opcode parameter required", cmd->name);
+		nvme_show_error("%s: opcode parameter required", acmd->name);
 		return -EINVAL;
 	}
 
@@ -9327,30 +9327,30 @@ static int passthru(int argc, char **argv, bool admin,
 	return err;
 }
 
-static int io_passthru(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int io_passthru(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc =
 	    "Send a user-defined IO command to the specified device via IOCTL passthrough, return results.";
 
-	return passthru(argc, argv, false, desc, cmd);
+	return passthru(argc, argv, false, desc, acmd);
 }
 
-static int admin_passthru(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int admin_passthru(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc =
 	    "Send a user-defined Admin command to the specified device via IOCTL passthrough, return results.";
 
-	return passthru(argc, argv, true, desc, cmd);
+	return passthru(argc, argv, true, desc, acmd);
 }
 
-static int gen_hostnqn_cmd(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int gen_hostnqn_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	char *hostnqn;
 
 	hostnqn = nvmf_hostnqn_generate();
 	if (!hostnqn) {
 		nvme_show_error("\"%s\" not supported. Install lib uuid and rebuild.",
-				command->name);
+				acmd->name);
 		return -ENOTSUP;
 	}
 	printf("%s\n", hostnqn);
@@ -9358,7 +9358,7 @@ static int gen_hostnqn_cmd(int argc, char **argv, struct command *command, struc
 	return 0;
 }
 
-static int show_hostnqn_cmd(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int show_hostnqn_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	char *hostnqn;
 
@@ -9378,7 +9378,7 @@ static int show_hostnqn_cmd(int argc, char **argv, struct command *command, stru
 }
 
 
-static int gen_dhchap_key(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int gen_dhchap_key(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc =
 	    "Generate a DH-HMAC-CHAP host key usable for NVMe In-Band Authentication.";
@@ -9509,7 +9509,7 @@ static int gen_dhchap_key(int argc, char **argv, struct command *command, struct
 	return 0;
 }
 
-static int check_dhchap_key(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int check_dhchap_key(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc =
 	    "Check a DH-HMAC-CHAP host key for usability for NVMe In-Band Authentication.";
@@ -9669,7 +9669,7 @@ out:
 	return err;
 }
 
-static int gen_tls_key(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int gen_tls_key(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Generate a TLS key in NVMe PSK Interchange format.";
 	const char *secret =
@@ -9809,7 +9809,7 @@ static int gen_tls_key(int argc, char **argv, struct command *command, struct pl
 	return 0;
 }
 
-static int check_tls_key(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int check_tls_key(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Check a TLS key for NVMe PSK Interchange format.\n";
 	const char *keydata = "TLS key (in PSK Interchange format) to be validated.";
@@ -9995,7 +9995,7 @@ static int import_key(const char *keyring, FILE *fd)
 }
 
 
-static int tls_key(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int tls_key(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Manipulation of TLS keys.\n";
 	const char *keyring = "Keyring for the retained key.";
@@ -10112,7 +10112,7 @@ static int tls_key(int argc, char **argv, struct command *command, struct plugin
 	return err;
 }
 
-static int show_topology_cmd(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int show_topology_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Show the topology\n";
 	const char *ranking = "Ranking order: namespace|ctrl";
@@ -10171,35 +10171,35 @@ static int show_topology_cmd(int argc, char **argv, struct command *command, str
 	return err;
 }
 
-static int discover_cmd(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int discover_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send Get Log Page request to Discovery Controller.";
 
 	return nvmf_discover(desc, argc, argv, false);
 }
 
-static int connect_all_cmd(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int connect_all_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Discover NVMeoF subsystems and connect to them";
 
 	return nvmf_discover(desc, argc, argv, true);
 }
 
-static int connect_cmd(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int connect_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Connect to NVMeoF subsystem";
 
 	return nvmf_connect(desc, argc, argv);
 }
 
-static int disconnect_cmd(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int disconnect_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Disconnect from NVMeoF subsystem";
 
 	return nvmf_disconnect(desc, argc, argv);
 }
 
-int disconnect_all_cmd(int argc, char **argv, struct command *command,
+int disconnect_all_cmd(int argc, char **argv, struct command *acmd,
 	struct plugin *plugin)
 {
 	const char *desc = "Disconnect from all connected NVMeoF subsystems";
@@ -10207,14 +10207,14 @@ int disconnect_all_cmd(int argc, char **argv, struct command *command,
 	return nvmf_disconnect_all(desc, argc, argv);
 }
 
-static int config_cmd(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int config_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Configuration of NVMeoF subsystems";
 
 	return nvmf_config(desc, argc, argv);
 }
 
-static int dim_cmd(int argc, char **argv, struct command *command, struct plugin *plugin)
+static int dim_cmd(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc =
 	    "Send Discovery Information Management command to a Discovery Controller (DC)";
@@ -10338,7 +10338,7 @@ static int nvme_mi(int argc, char **argv, __u8 admin_opcode, const char *desc)
 	return err;
 }
 
-static int nmi_recv(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int nmi_recv(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc =
 	    "Send a NVMe-MI Receive command to the specified device, return results.";
@@ -10346,14 +10346,14 @@ static int nmi_recv(int argc, char **argv, struct command *cmd, struct plugin *p
 	return nvme_mi(argc, argv, nvme_admin_nvme_mi_recv, desc);
 }
 
-static int nmi_send(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int nmi_send(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send a NVMe-MI Send command to the specified device, return results.";
 
 	return nvme_mi(argc, argv, nvme_admin_nvme_mi_send, desc);
 }
 
-static int get_mgmt_addr_list_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_mgmt_addr_list_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve Management Address List Log, show it";
 	nvme_print_flags_t flags;
@@ -10390,7 +10390,7 @@ static int get_mgmt_addr_list_log(int argc, char **argv, struct command *cmd, st
 	return err;
 }
 
-static int get_rotational_media_info_log(int argc, char **argv, struct command *cmd,
+static int get_rotational_media_info_log(int argc, char **argv, struct command *acmd,
 					 struct plugin *plugin)
 {
 	const char *desc = "Retrieve Rotational Media Information Log, show it";
@@ -10482,7 +10482,7 @@ err_free:
 	return err;
 }
 
-static int get_dispersed_ns_participating_nss_log(int argc, char **argv, struct command *cmd,
+static int get_dispersed_ns_participating_nss_log(int argc, char **argv, struct command *acmd,
 						  struct plugin *plugin)
 {
 	const char *desc = "Retrieve Dispersed Namespace Participating NVM Subsystems Log, show it";
@@ -10602,7 +10602,7 @@ err_free:
 	return err;
 }
 
-static int get_reachability_groups_log(int argc, char **argv, struct command *cmd,
+static int get_reachability_groups_log(int argc, char **argv, struct command *acmd,
 				       struct plugin *plugin)
 {
 	const char *desc = "Retrieve Reachability Groups Log, show it";
@@ -10715,7 +10715,7 @@ err_free:
 	return err;
 }
 
-static int get_reachability_associations_log(int argc, char **argv, struct command *cmd,
+static int get_reachability_associations_log(int argc, char **argv, struct command *acmd,
 					     struct plugin *plugin)
 {
 	const char *desc = "Retrieve Reachability Associations Log, show it";
@@ -10799,7 +10799,7 @@ err_free:
 	return err;
 }
 
-static int get_host_discovery_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_host_discovery_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve Host Discovery Log, show it";
 	const char *allhoste = "All Host Entries";
@@ -10880,7 +10880,7 @@ err_free:
 	return err;
 }
 
-static int get_ave_discovery_log(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int get_ave_discovery_log(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve AVE Discovery Log, show it";
 	nvme_print_flags_t flags;
@@ -10957,7 +10957,7 @@ err_free:
 	return err;
 }
 
-static int get_pull_model_ddc_req_log(int argc, char **argv, struct command *cmd,
+static int get_pull_model_ddc_req_log(int argc, char **argv, struct command *acmd,
 				      struct plugin *plugin)
 {
 	const char *desc = "Retrieve Pull Model DDC Request Log, show it";

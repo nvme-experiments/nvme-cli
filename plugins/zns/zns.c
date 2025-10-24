@@ -86,7 +86,7 @@ static int print_zns_list(struct nvme_global_ctx *ctx)
 	return err;
 }
 
-static int list(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int list(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	int err;
@@ -111,7 +111,7 @@ static int list(int argc, char **argv, struct command *cmd, struct plugin *plugi
 	return print_zns_list(ctx);
 }
 
-static int id_ctrl(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int id_ctrl(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send a ZNS specific Identify Controller command to\n"
 			   "the given device and report information about the specified\n"
@@ -155,7 +155,7 @@ static int id_ctrl(int argc, char **argv, struct command *cmd, struct plugin *pl
 	return err;
 }
 
-static int id_ns(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int id_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send a ZNS specific Identify Namespace command to\n"
 			   "the given device and report information about the specified\n"
@@ -226,7 +226,7 @@ static int id_ns(int argc, char **argv, struct command *cmd, struct plugin *plug
 	return err;
 }
 
-static int zns_mgmt_send(int argc, char **argv, struct command *cmd, struct plugin *plugin,
+static int zns_mgmt_send(int argc, char **argv, struct command *acmd, struct plugin *plugin,
 	const char *desc, enum nvme_zns_send_action zsa)
 {
 	const char *zslba = "starting LBA of the zone for this command";
@@ -235,7 +235,7 @@ static int zns_mgmt_send(int argc, char **argv, struct command *cmd, struct plug
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	int err, zcapc = 0;
-	char *command;
+	char *cmdstr;
 	__u32 result;
 
 	struct config {
@@ -259,7 +259,7 @@ static int zns_mgmt_send(int argc, char **argv, struct command *cmd, struct plug
 	if (err)
 		return err;
 
-	err = asprintf(&command, "%s-%s", plugin->name, cmd->name);
+	err = asprintf(&cmdstr, "%s-%s", plugin->name, acmd->name);
 	if (err < 0)
 		return err;
 
@@ -289,7 +289,7 @@ static int zns_mgmt_send(int argc, char **argv, struct command *cmd, struct plug
 			zcapc = result & 0x1;
 
 		printf("%s: Success, action:%d zone:%"PRIx64" all:%d zcapc:%u nsid:%d\n",
-			command, zsa, (uint64_t)cfg.zslba, (int)cfg.select_all,
+			cmdstr, zsa, (uint64_t)cfg.zslba, (int)cfg.select_all,
 			zcapc, cfg.namespace_id);
 	} else if (err > 0) {
 		nvme_show_status(err);
@@ -297,7 +297,7 @@ static int zns_mgmt_send(int argc, char **argv, struct command *cmd, struct plug
 		perror(desc);
 	}
 free:
-	free(command);
+	free(cmdstr);
 	return err;
 }
 
@@ -330,7 +330,7 @@ static int get_zdes_bytes(struct nvme_transport_handle *hdl, __u32 nsid)
 	return ns.lbafe[lbaf].zdes << 6;
 }
 
-static int zone_mgmt_send(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int zone_mgmt_send(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Zone Management Send";
 	const char *zslba =
@@ -457,21 +457,21 @@ free:
 	return err;
 }
 
-static int close_zone(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int close_zone(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Close zones\n";
 
-	return zns_mgmt_send(argc, argv, cmd, plugin, desc, NVME_ZNS_ZSA_CLOSE);
+	return zns_mgmt_send(argc, argv, acmd, plugin, desc, NVME_ZNS_ZSA_CLOSE);
 }
 
-static int finish_zone(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int finish_zone(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Finish zones\n";
 
-	return zns_mgmt_send(argc, argv, cmd, plugin, desc, NVME_ZNS_ZSA_FINISH);
+	return zns_mgmt_send(argc, argv, acmd, plugin, desc, NVME_ZNS_ZSA_FINISH);
 }
 
-static int open_zone(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int open_zone(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Open zones\n";
 	const char *zslba = "starting LBA of the zone for this command";
@@ -536,21 +536,21 @@ static int open_zone(int argc, char **argv, struct command *cmd, struct plugin *
 	return err;
 }
 
-static int reset_zone(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int reset_zone(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Reset zones\n";
 
-	return zns_mgmt_send(argc, argv, cmd, plugin, desc, NVME_ZNS_ZSA_RESET);
+	return zns_mgmt_send(argc, argv, acmd, plugin, desc, NVME_ZNS_ZSA_RESET);
 }
 
-static int offline_zone(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int offline_zone(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Offline zones\n";
 
-	return zns_mgmt_send(argc, argv, cmd, plugin, desc, NVME_ZNS_ZSA_OFFLINE);
+	return zns_mgmt_send(argc, argv, acmd, plugin, desc, NVME_ZNS_ZSA_OFFLINE);
 }
 
-static int set_zone_desc(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int set_zone_desc(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Set Zone Descriptor Extension\n";
 	const char *zslba = "starting LBA of the zone for this command";
@@ -654,7 +654,7 @@ free:
 }
 
 
-static int zrwa_flush_zone(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int zrwa_flush_zone(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Flush Explicit ZRWA Range";
 	const char *slba = "LBA to flush up to";
@@ -712,7 +712,7 @@ static int zrwa_flush_zone(int argc, char **argv, struct command *cmd, struct pl
 	return err;
 }
 
-static int zone_mgmt_recv(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int zone_mgmt_recv(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Zone Management Receive";
 	const char *zslba = "starting LBA of the zone";
@@ -806,7 +806,7 @@ static int zone_mgmt_recv(int argc, char **argv, struct command *cmd, struct plu
 	return err;
 }
 
-static int report_zones(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int report_zones(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve the Report Zones data structure";
 	const char *zslba = "starting LBA of the zone";
@@ -979,7 +979,7 @@ free_buff:
 	return err;
 }
 
-static int zone_append(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int zone_append(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "The zone append command is used to write to a zone\n"
 			   "using the slba of the zone, and the write will be appended from the\n"
@@ -1193,7 +1193,7 @@ close_dfd:
 	return err;
 }
 
-static int changed_zone_list(int argc, char **argv, struct command *cmd, struct plugin *plugin)
+static int changed_zone_list(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Retrieve Changed Zone log for the given device";
 	const char *rae = "retain an asynchronous event";
