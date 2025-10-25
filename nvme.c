@@ -3185,6 +3185,16 @@ static int parse_lba_num_si(struct nvme_transport_handle *hdl, const char *opt,
 	return 0;
 }
 
+int nvme_identify_ns_granularity(struct nvme_transport_handle *hdl,
+		struct nvme_id_ns_granularity_list *gr_list)
+{
+	struct nvme_passthru_cmd cmd;
+
+	nvme_init_identify_ns_granularity(&cmd, gr_list);
+
+	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
+}
+
 static int create_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send a namespace management command "
@@ -3217,7 +3227,6 @@ static int create_ns(int argc, char **argv, struct command *acmd, struct plugin 
 	_cleanup_free_ struct nvme_id_ns *ns = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	int err = 0, i;
 	__u32 nsid;
 	uint16_t num_phandle;
@@ -3369,8 +3378,7 @@ static int create_ns(int argc, char **argv, struct command *acmd, struct plugin 
 		if (!gr_list)
 			return -ENOMEM;
 
-		nvme_init_identify_ns_granularity(&cmd, gr_list);
-		if (!nvme_submit_admin_passthru(hdl, &cmd, NULL)) {
+		if (!nvme_identify_ns_granularity(hdl, gr_list)) {
 			struct nvme_id_ns_granularity_desc *desc;
 			int index = cfg.flbas;
 
@@ -4080,7 +4088,6 @@ static int id_ns_granularity(int argc, char **argv, struct command *acmd, struct
 	_cleanup_free_ struct nvme_id_ns_granularity_list *granularity_list = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	int err;
 
@@ -4100,8 +4107,7 @@ static int id_ns_granularity(int argc, char **argv, struct command *acmd, struct
 	if (!granularity_list)
 		return -ENOMEM;
 
-	nvme_init_identify_ns_granularity(&cmd, granularity_list);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns_granularity(hdl, granularity_list);
 	if (!err)
 		nvme_show_id_ns_granularity_list(granularity_list, flags);
 	else if (err > 0)
