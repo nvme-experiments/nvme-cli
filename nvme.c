@@ -3851,6 +3851,16 @@ static int nvm_id_ns_lba_format(int argc, char **argv, struct command *acmd, str
 	return err;
 }
 
+int nvme_identify_ns_descs_list(struct nvme_transport_handle *hdl,
+		__u32 nsid, struct nvme_ns_id_desc *descs)
+{
+	struct nvme_passthru_cmd cmd;
+
+	nvme_init_identify_ns_descs_list(&cmd, nsid, descs);
+
+	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
+}
+
 static int ns_descs(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send Namespace Identification Descriptors command to the "
@@ -3861,7 +3871,6 @@ static int ns_descs(int argc, char **argv, struct command *acmd, struct plugin *
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	_cleanup_free_ void *nsdescs = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	int err;
 
@@ -3907,8 +3916,7 @@ static int ns_descs(int argc, char **argv, struct command *acmd, struct plugin *
 	if (!nsdescs)
 		return -ENOMEM;
 
-	nvme_init_identify_ns_descs_list(&cmd, cfg.namespace_id, nsdescs);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns_descs_list(hdl, cfg.namespace_id, nsdescs);
 	if (!err)
 		nvme_show_id_ns_descs(nsdescs, cfg.namespace_id, flags);
 	else if (err > 0)

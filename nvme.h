@@ -144,4 +144,6 @@ int nvme_identify_csi_ns_user_data_format(struct nvme_transport_handle *hdl,
 		enum nvme_csi csi, __u16 fidx, __u8 uidx, void *data);
 int nvme_identify_ns_granularity(struct nvme_transport_handle *hdl,
 		struct nvme_id_ns_granularity_list *gr_list);
+int nvme_identify_ns_descs_list(struct nvme_transport_handle *hdl,
+		__u32 nsid, struct nvme_ns_id_desc *descs);
 #endif /* _NVME_H */

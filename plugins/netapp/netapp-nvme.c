@@ -793,7 +793,6 @@ static int netapp_ontapdevices_get_info(struct nvme_transport_handle *hdl,
 					struct ontapdevice_info *item,
 					const char *dev)
 {
-	struct nvme_passthru_cmd cmd;
 	void *nsdescs;
 	int err;
 
@@ -826,8 +825,7 @@ static int netapp_ontapdevices_get_info(struct nvme_transport_handle *hdl,
 
 	memset(nsdescs, 0, 0x1000);
 
-	nvme_init_identify_ns_descs_list(&cmd, item->nsid, nsdescs);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns_descs_list(hdl, item->nsid, nsdescs);
 	if (err) {
 		fprintf(stderr, "Unable to identify namespace descriptor for %s (%s)\n",
 			dev, err < 0 ? strerror(-err) :
