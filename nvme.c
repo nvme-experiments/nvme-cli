@@ -3058,6 +3058,16 @@ static int detach_ns(int argc, char **argv, struct command *acmd, struct plugin 
 	return nvme_attach_ns(argc, argv, 0, desc, acmd);
 }
 
+int nvme_identify_active_ns_list(struct nvme_transport_handle *hdl,
+		__u32 nsid, struct nvme_ns_list *ns_list)
+{
+	struct nvme_passthru_cmd cmd;
+
+	nvme_init_identify_active_ns_list(&cmd, nsid, ns_list);
+
+	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
+}
+
 static int parse_lba_num_si(struct nvme_transport_handle *hdl, const char *opt,
 			    const char *val, __u8 flbas, __u64 *num, __u64 align)
 {
@@ -3102,8 +3112,7 @@ static int parse_lba_num_si(struct nvme_transport_handle *hdl, const char *opt,
 	if ((ctrl->oacs & 0x8) >> 3) {
 		nsid = NVME_NSID_ALL;
 	} else {
-		nvme_init_identify_active_ns_list(&cmd, nsid - 1, ns_list);
-		err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+		err = nvme_identify_active_ns_list(hdl, nsid - 1, ns_list);
 		if (err) {
 			if (err < 0)
 				nvme_show_error("identify namespace list: %s",
