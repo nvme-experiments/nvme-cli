@@ -2679,6 +2679,17 @@ static int list_ctrl(int argc, char **argv, struct command *acmd, struct plugin 
 	return err;
 }
 
+int nvme_identify(struct nvme_transport_handle *hdl, __u32 nsid,
+		enum nvme_csi csi, enum nvme_identify_cns cns, void *data,
+		__u32 len)
+{
+	struct nvme_passthru_cmd cmd;
+
+	nvme_init_identify(&cmd, nsid, csi, cns, data, len);
+
+	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
+}
+
 static int list_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "For the specified controller handle, show the "
@@ -2690,7 +2701,6 @@ static int list_ns(int argc, char **argv, struct command *acmd, struct plugin *p
 	_cleanup_free_ struct nvme_ns_list *ns_list = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	enum nvme_identify_cns cns;
 	nvme_print_flags_t flags;
 	int err;
@@ -2743,9 +2753,8 @@ static int list_ns(int argc, char **argv, struct command *acmd, struct plugin *p
 			NVME_IDENTIFY_CNS_CSI_NS_ACTIVE_LIST;
 	}
 
-	nvme_init_identify(&cmd, cfg.namespace_id - 1, cfg.csi, cns,
-			   ns_list, sizeof(*ns_list));
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify(hdl, cfg.namespace_id - 1, cfg.csi, cns, ns_list,
+			    sizeof(*ns_list));
 	if (!err)
 		nvme_show_list_ns(ns_list, flags);
 	else if (err > 0)
