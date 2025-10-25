@@ -131,4 +131,6 @@ int nvme_identify_ctrl(struct nvme_transport_handle *hdl,
 		struct nvme_id_ctrl *id);
 int nvme_identify_active_ns_list(struct nvme_transport_handle *hdl,
 		__u32 nsid, struct nvme_ns_list *ns_list);
+int nvme_identify_ns(struct nvme_transport_handle *hdl,
+		__u32 nsid, struct nvme_id_ns *ns);
 #endif /* _NVME_H */

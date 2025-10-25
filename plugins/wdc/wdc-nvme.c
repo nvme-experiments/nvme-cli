@@ -10122,7 +10122,6 @@ static int wdc_do_drive_essentials(struct nvme_global_ctx *ctx, struct nvme_tran
 	__u32 listIdx = 0;
 	__u32 vuLogIdx = 0;
 	__u32 result;
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	struct nvme_id_ns ns;
 	struct nvme_error_log_page *elogBuffer;
@@ -10200,8 +10199,7 @@ static int wdc_do_drive_essentials(struct nvme_global_ctx *ctx, struct nvme_tran
 	wdc_WriteToFile(fileName, (char *)&ctrl, sizeof(struct nvme_id_ctrl));
 
 	memset(&ns, 0, sizeof(struct nvme_id_ns));
-	nvme_init_identify_ns(&cmd, 1, &ns);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ns(hdl, 1, &ns);
 	if (ret) {
 		fprintf(stderr, "ERROR: WDC: nvme_identify_ns() failed, ret = %d\n", ret);
 	} else {

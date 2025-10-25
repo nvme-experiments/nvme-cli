@@ -67,7 +67,6 @@ struct huawei_list_element_len {
 static int huawei_get_nvme_info(struct nvme_transport_handle *hdl,
 				struct huawei_list_item *item, const char *node)
 {
-	struct nvme_passthru_cmd cmd;
 	struct stat nvme_stat_info;
 	int err;
 	int len;
@@ -87,8 +86,7 @@ static int huawei_get_nvme_info(struct nvme_transport_handle *hdl,
 
 	item->huawei_device = true;
 	err = nvme_get_nsid(hdl, &item->nsid);
-	nvme_init_identify_ns(&cmd, item->nsid, &item->ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, item->nsid, &item->ns);
 	if (err)
 		return err;
 

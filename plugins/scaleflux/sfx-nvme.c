@@ -936,7 +936,6 @@ static int sfx_set_feature(int argc, char **argv, struct command *acmd, struct p
 	const char *force = "The \"I know what I'm doing\" flag, skip confirmation before sending command";
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ns ns;
 	int err = 0;
 
@@ -982,8 +981,7 @@ static int sfx_set_feature(int argc, char **argv, struct command *acmd, struct p
 
 	if (cfg.feature_id == SFX_FEAT_ATOMIC && cfg.value) {
 		if (cfg.namespace_id != NVME_NSID_ALL) {
-			nvme_init_identify_ns(&cmd, cfg.namespace_id, &ns);
-			err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+			err = nvme_identify_ns(hdl, cfg.namespace_id, &ns);
 			if (err) {
 				if (err < 0)
 					perror("identify-namespace");

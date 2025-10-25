@@ -3068,13 +3068,22 @@ int nvme_identify_active_ns_list(struct nvme_transport_handle *hdl,
 	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
 }
 
+int nvme_identify_ns(struct nvme_transport_handle *hdl,
+		__u32 nsid, struct nvme_id_ns *ns)
+{
+	struct nvme_passthru_cmd cmd;
+
+	nvme_init_identify_ns(&cmd, nsid, ns);
+
+	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
+}
+
 static int parse_lba_num_si(struct nvme_transport_handle *hdl, const char *opt,
 			    const char *val, __u8 flbas, __u64 *num, __u64 align)
 {
 	_cleanup_free_ struct nvme_ns_list *ns_list = NULL;
 	_cleanup_free_ struct nvme_id_ctrl *ctrl = NULL;
 	_cleanup_free_ struct nvme_id_ns *ns = NULL;
-	struct nvme_passthru_cmd cmd;
 	__u32 nsid = 1;
 	__u8 lbaf;
 	unsigned int remainder;
@@ -3128,8 +3137,7 @@ static int parse_lba_num_si(struct nvme_transport_handle *hdl, const char *opt,
 	if (!ns)
 		return -ENOMEM;
 
-	nvme_init_identify_ns(&cmd, nsid, ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, nsid, ns);
 	if (err) {
 		if (err < 0)
 			nvme_show_error("identify namespace: %s", nvme_strerror(-err));
@@ -3298,8 +3306,7 @@ static int create_ns(int argc, char **argv, struct command *acmd, struct plugin 
 		if (!ns)
 			return -ENOMEM;
 
-		nvme_init_identify_ns(&cmd, NVME_NSID_ALL, ns);
-		err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+		err = nvme_identify_ns(hdl, NVME_NSID_ALL, ns);
 		if (err) {
 			if (err < 0) {
 				nvme_show_error("identify-namespace: %s", nvme_strerror(-err));
@@ -3721,8 +3728,7 @@ static int nvm_id_ns(int argc, char **argv, struct command *acmd,
 	if (!ns)
 		return -ENOMEM;
 
-	nvme_init_identify_ns(&cmd, cfg.namespace_id, ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, cfg.namespace_id, ns);
 	if (err) {
 		nvme_show_status(err);
 		return err;
@@ -3791,8 +3797,7 @@ static int nvm_id_ns_lba_format(int argc, char **argv, struct command *acmd, str
 	if (!ns)
 		return -ENOMEM;
 
-	nvme_init_identify_ns(&cmd, NVME_NSID_ALL, ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, NVME_NSID_ALL, ns);
 	if (err) {
 		ns->nlbaf = NVME_FEAT_LBA_RANGE_MAX - 1;
 		ns->nulbaf = 0;
@@ -3954,12 +3959,13 @@ static int id_ns(int argc, char **argv, struct command *acmd, struct plugin *plu
 	if (!ns)
 		return -ENOMEM;
 
-	if (cfg.force)
+	if (cfg.force) {
 		nvme_init_identify_allocated_ns(&cmd, cfg.namespace_id, ns);
-	else
-		nvme_init_identify_ns(&cmd, cfg.namespace_id, ns);
+		err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	} else {
+		err = nvme_identify_ns(hdl, cfg.namespace_id, ns);
+	}
 
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (!err)
 		nvme_show_id_ns(ns, cfg.namespace_id, 0, false, flags);
 	else if (err > 0)
@@ -6461,7 +6467,6 @@ static int format_cmd(int argc, char **argv, struct command *acmd, struct plugin
 	_cleanup_free_ struct nvme_id_ns *ns = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	__u8 prev_lbaf = 0;
 	int block_size;
 	int err, i;
@@ -6578,8 +6583,7 @@ static int format_cmd(int argc, char **argv, struct command *acmd, struct plugin
 		if (!ns)
 			return -ENOMEM;
 
-		nvme_init_identify_ns(&cmd, cfg.namespace_id, ns);
-		err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+		err = nvme_identify_ns(hdl, cfg.namespace_id, ns);
 		if (err) {
 			if (err < 0) {
 				nvme_show_error("identify-namespace: %s", nvme_strerror(-err));
@@ -7360,8 +7364,7 @@ static int write_zeroes(int argc, char **argv, struct command *acmd, struct plug
 	if (!ns)
 		return -ENOMEM;
 
-	nvme_init_identify_ns(&cmd, cfg.namespace_id, ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, cfg.namespace_id, ns);
 	if (err < 0) {
 		nvme_show_error("identify namespace: %s", nvme_strerror(-err));
 		return err;
@@ -8336,8 +8339,7 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 	if (!ns)
 		return -ENOMEM;
 
-	nvme_init_identify_ns(&cmd, cfg.namespace_id, ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, cfg.namespace_id, ns);
 	if (err > 0) {
 		nvme_show_status(err);
 		return err;
@@ -8611,8 +8613,7 @@ static int verify_cmd(int argc, char **argv, struct command *acmd, struct plugin
 	if (!ns)
 		return -ENOMEM;
 
-	nvme_init_identify_ns(&cmd, cfg.namespace_id, ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, cfg.namespace_id, ns);
 	if (err < 0) {
 		nvme_show_error("identify namespace: %s", nvme_strerror(-err));
 		return err;

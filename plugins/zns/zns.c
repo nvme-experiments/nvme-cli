@@ -212,8 +212,7 @@ static int id_ns(int argc, char **argv, struct command *acmd, struct plugin *plu
 		}
 	}
 
-	nvme_init_identify_ns(&cmd, cfg.namespace_id, &id_ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, cfg.namespace_id, &id_ns);
 	if (err) {
 		nvme_show_status(err);
 		return err;
@@ -314,8 +313,7 @@ static int get_zdes_bytes(struct nvme_transport_handle *hdl, __u32 nsid)
 	__u8 lbaf;
 	int err;
 
-	nvme_init_identify_ns(&cmd, nsid, &id_ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, nsid, &id_ns);
 	if (err > 0) {
 		nvme_show_status(err);
 		return -1;
@@ -897,8 +895,7 @@ static int report_zones(int argc, char **argv, struct command *acmd, struct plug
 			return zdes;
 	}
 
-	nvme_init_identify_ns(&cmd, cfg.namespace_id, &id_ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, cfg.namespace_id, &id_ns);
 	if (err) {
 		nvme_show_status(err);
 		return err;
@@ -1014,7 +1011,6 @@ static int zone_append(int argc, char **argv, struct command *acmd, struct plugi
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	unsigned int lba_size, meta_size;
 	void *buf = NULL, *mbuf = NULL;
-	struct nvme_passthru_cmd cmd;
 	__u16 nblocks, control = 0;
 	__u64 result;
 	__u8 lba_index;
@@ -1076,8 +1072,7 @@ static int zone_append(int argc, char **argv, struct command *acmd, struct plugi
 		}
 	}
 
-	nvme_init_identify_ns(&cmd, cfg.namespace_id, &ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, cfg.namespace_id, &ns);
 	if (err) {
 		nvme_show_status(err);
 		return err;

@@ -758,7 +758,6 @@ static int netapp_smdevices_get_info(struct nvme_transport_handle *hdl,
 				     struct smdevice_info *item,
 				     const char *dev)
 {
-	struct nvme_passthru_cmd cmd;
 	int err;
 
 	err = nvme_identify_ctrl(hdl, &item->ctrl);
@@ -777,8 +776,7 @@ static int netapp_smdevices_get_info(struct nvme_transport_handle *hdl,
 	if (err)
 		return err;
 
-	nvme_init_identify_ns(&cmd, item->nsid, &item->ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, item->nsid, &item->ns);
 	if (err) {
 		fprintf(stderr,
 			"Unable to identify namespace for %s (%s)\n",
@@ -813,8 +811,7 @@ static int netapp_ontapdevices_get_info(struct nvme_transport_handle *hdl,
 
 	err = nvme_get_nsid(hdl, &item->nsid);
 
-	nvme_init_identify_ns(&cmd, item->nsid, &item->ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ns(hdl, item->nsid, &item->ns);
 	if (err) {
 		fprintf(stderr, "Unable to identify namespace for %s (%s)\n",
 			dev, err < 0 ? strerror(-err) :

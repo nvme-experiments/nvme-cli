@@ -2273,13 +2273,10 @@ static void GetGenericLogs(struct nvme_transport_handle *hdl, const char *dir)
 
 static void GetNSIDDInfo(struct nvme_transport_handle *hdl, const char *dir, int nsid)
 {
-	struct nvme_passthru_cmd cmd;
 	char file[PATH_MAX] = { 0 };
 	struct nvme_id_ns ns;
 
-
-	nvme_init_identify_ns(&cmd, nsid, &ns);
-	if (!nvme_submit_admin_passthru(hdl, &cmd, NULL)) {
+	if (!nvme_identify_ns(hdl, nsid, &ns)) {
 		sprintf(file, "identify_namespace_%d_data.bin", nsid);
 		WriteData((__u8 *)&ns, sizeof(ns), dir, file, "id-ns");
 	}

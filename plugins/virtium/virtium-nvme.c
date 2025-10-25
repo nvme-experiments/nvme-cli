@@ -267,7 +267,6 @@ static int vt_add_entry_to_log(struct nvme_transport_handle *hdl,
 			       const struct vtview_save_log_settings *cfg)
 {
 	struct vtview_smart_log_entry smart;
-	struct nvme_passthru_cmd cmd;
 	const char *filename;
 	int ret = 0;
 	unsigned int nsid = 0;
@@ -287,8 +286,7 @@ static int vt_add_entry_to_log(struct nvme_transport_handle *hdl,
 		return -1;
 	}
 
-	nvme_init_identify_ns(&cmd, nsid, &smart.raw_ns);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ns(hdl, nsid, &smart.raw_ns);
 	if (ret) {
 		printf("Cannot read namespace identify\n");
 		return -1;
