@@ -140,4 +140,6 @@ int nvme_identify_uuid_list(struct nvme_transport_handle *hdl,
 int nvme_identify(struct nvme_transport_handle *hdl, __u32 nsid,
 		enum nvme_csi csi, enum nvme_identify_cns cns, void *data,
 		__u32 len);
+int nvme_identify_csi_ns_user_data_format(struct nvme_transport_handle *hdl,
+		enum nvme_csi csi, __u16 fidx, __u8 uidx, void *data);
 #endif /* _NVME_H */

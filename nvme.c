@@ -2765,6 +2765,16 @@ static int list_ns(int argc, char **argv, struct command *acmd, struct plugin *p
 	return err;
 }
 
+int nvme_identify_csi_ns_user_data_format(struct nvme_transport_handle *hdl,
+		enum nvme_csi csi, __u16 fidx, __u8 uidx, void *data)
+{
+	struct nvme_passthru_cmd cmd;
+
+	nvme_init_identify_csi_ns_user_data_format(&cmd, csi, fidx, uidx, data);
+
+	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
+}
+
 static int id_ns_lba_format(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send an Identify Namespace command to the given "
@@ -2774,7 +2784,6 @@ static int id_ns_lba_format(int argc, char **argv, struct command *acmd, struct 
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	_cleanup_free_ struct nvme_id_ns *ns = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	int err = -1;
 
@@ -2809,10 +2818,9 @@ static int id_ns_lba_format(int argc, char **argv, struct command *acmd, struct 
 	if (!ns)
 		return -ENOMEM;
 
-	nvme_init_identify_csi_ns_user_data_format(&cmd, NVME_CSI_NVM,
+	err = nvme_identify_csi_ns_user_data_format(hdl, NVME_CSI_NVM,
 						    cfg.lba_format_index,
 						    cfg.uuid_index, ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	if (!err)
 		nvme_show_id_ns(ns, 0, cfg.lba_format_index, true, flags);
 	else if (err > 0)
@@ -3778,7 +3786,6 @@ static int nvm_id_ns_lba_format(int argc, char **argv, struct command *acmd, str
 	_cleanup_free_ struct nvme_id_ns *ns = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	int err = -1;
 
@@ -3823,10 +3830,9 @@ static int nvm_id_ns_lba_format(int argc, char **argv, struct command *acmd, str
 	if (!nvm_ns)
 		return -ENOMEM;
 
-	nvme_init_identify_csi_ns_user_data_format(&cmd, NVME_CSI_NVM,
-						   cfg.lba_format_index,
-						   cfg.uuid_index, nvm_ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_csi_ns_user_data_format(hdl, NVME_CSI_NVM,
+						    cfg.lba_format_index,
+						    cfg.uuid_index, nvm_ns);
 	if (!err)
 		nvme_show_nvm_id_ns(nvm_ns, 0, ns, cfg.lba_format_index, true, flags);
 	else if (err > 0)
