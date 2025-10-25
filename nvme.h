@@ -135,4 +135,6 @@ int nvme_identify_ns(struct nvme_transport_handle *hdl,
 		__u32 nsid, struct nvme_id_ns *ns);
 int nvme_identify_csi_ns(struct nvme_transport_handle *hdl, __u32 nsid,
 		enum nvme_csi csi, __u8 uidx, struct nvme_nvm_id_ns *id_ns);
+int nvme_identify_uuid_list(struct nvme_transport_handle *hdl,
+		struct nvme_id_uuid_list *uuid_list);
 #endif /* _NVME_H */

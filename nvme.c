@@ -4150,6 +4150,16 @@ static int id_nvmset(int argc, char **argv, struct command *acmd, struct plugin 
 	return err;
 }
 
+int nvme_identify_uuid_list(struct nvme_transport_handle *hdl,
+		struct nvme_id_uuid_list *uuid_list)
+{
+	struct nvme_passthru_cmd cmd;
+
+	nvme_init_identify_uuid_list(&cmd, uuid_list);
+
+	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
+}
+
 static int id_uuid(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send an Identify UUID List command to the "
@@ -4161,7 +4171,6 @@ static int id_uuid(int argc, char **argv, struct command *acmd, struct plugin *p
 	_cleanup_free_ struct nvme_id_uuid_list *uuid_list = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	int err;
 
@@ -4199,8 +4208,7 @@ static int id_uuid(int argc, char **argv, struct command *acmd, struct plugin *p
 	if (!uuid_list)
 		return -ENOMEM;
 
-	nvme_init_identify_uuid_list(&cmd, uuid_list);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_uuid_list(hdl, uuid_list);
 	if (!err)
 		nvme_show_id_uuid_list(uuid_list, flags);
 	else if (err > 0)

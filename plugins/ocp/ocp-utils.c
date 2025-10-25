@@ -31,13 +31,11 @@ int ocp_find_uuid_index(struct nvme_id_uuid_list *uuid_list, __u8 *index)
 int ocp_get_uuid_index(struct nvme_transport_handle *hdl, __u8 *index)
 {
 	struct nvme_id_uuid_list uuid_list;
-	struct nvme_passthru_cmd cmd;
 	int err;
 
 	*index = 0;
 
-	nvme_init_identify_uuid_list(&cmd, &uuid_list);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_uuid_list(hdl, &uuid_list);
 	if (err)
 		return err;
 
