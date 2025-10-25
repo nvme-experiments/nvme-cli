@@ -157,6 +157,16 @@ static int id_ctrl(int argc, char **argv, struct command *acmd, struct plugin *p
 	return err;
 }
 
+int nvme_zns_identify_ns(struct nvme_transport_handle *hdl,
+		__u32 nsid, struct nvme_zns_id_ns *data)
+{
+	struct nvme_passthru_cmd cmd;
+
+	nvme_init_zns_identify_ns(&cmd, nsid, data);
+
+	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
+}
+
 static int id_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send a ZNS specific Identify Namespace command to\n"
@@ -167,7 +177,6 @@ static int id_ns(int argc, char **argv, struct command *acmd, struct plugin *plu
 
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	struct nvme_zns_id_ns ns;
 	struct nvme_id_ns id_ns;
@@ -218,8 +227,7 @@ static int id_ns(int argc, char **argv, struct command *acmd, struct plugin *plu
 		return err;
 	}
 
-	nvme_init_zns_identify_ns(&cmd, cfg.namespace_id, &ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_zns_identify_ns(hdl, cfg.namespace_id, &ns);
 	if (!err)
 		nvme_show_zns_id_ns(&ns, &id_ns, flags);
 	else if (err > 0)
@@ -307,7 +315,6 @@ free:
 
 static int get_zdes_bytes(struct nvme_transport_handle *hdl, __u32 nsid)
 {
-	struct nvme_passthru_cmd cmd;
 	struct nvme_zns_id_ns ns;
 	struct nvme_id_ns id_ns;
 	__u8 lbaf;
@@ -322,8 +329,7 @@ static int get_zdes_bytes(struct nvme_transport_handle *hdl, __u32 nsid)
 		return -1;
 	}
 
-	nvme_init_zns_identify_ns(&cmd, nsid,  &ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_zns_identify_ns(hdl, nsid,  &ns);
 	if (err > 0) {
 		nvme_show_status(err);
 		return -1;
@@ -824,7 +830,6 @@ static int report_zones(int argc, char **argv, struct command *acmd, struct plug
 
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	int zdes = 0, err = -1;
 	__u32 report_size;
@@ -901,8 +906,7 @@ static int report_zones(int argc, char **argv, struct command *acmd, struct plug
 		return err;
 	}
 
-	nvme_init_zns_identify_ns(&cmd, cfg.namespace_id, &id_zns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_zns_identify_ns(hdl, cfg.namespace_id, &id_zns);
 	if (!err) {
 		/* get zsze field from zns id ns data - needed for offset calculation */
 		nvme_id_ns_flbas_to_lbaf_inuse(id_ns.flbas, &lbaf);

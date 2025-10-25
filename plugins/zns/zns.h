@@ -30,3 +30,6 @@ PLUGIN(NAME("zns", "Zoned Namespace Command Set", NVME_VERSION),
 #endif
 
 #include "define_cmd.h"
+
+int nvme_zns_identify_ns(struct nvme_transport_handle *hdl,
+		__u32 nsid, struct nvme_zns_id_ns *data);
