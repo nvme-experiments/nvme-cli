@@ -3674,6 +3674,16 @@ static int nvm_id_ctrl(int argc, char **argv, struct command *acmd,
 	return err;
 }
 
+int nvme_identify_csi_ns(struct nvme_transport_handle *hdl, __u32 nsid,
+		enum nvme_csi csi, __u8 uidx, struct nvme_nvm_id_ns *id_ns)
+{
+	struct nvme_passthru_cmd cmd;
+
+	nvme_init_identify_csi_ns(&cmd, nsid, csi, uidx, id_ns);
+
+	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
+}
+
 static int nvm_id_ns(int argc, char **argv, struct command *acmd,
 	struct plugin *plugin)
 {
@@ -3685,7 +3695,6 @@ static int nvm_id_ns(int argc, char **argv, struct command *acmd,
 	_cleanup_free_ struct nvme_id_ns *ns = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	int err = -1;
 
@@ -3738,10 +3747,8 @@ static int nvm_id_ns(int argc, char **argv, struct command *acmd,
 	if (!id_ns)
 		return -ENOMEM;
 
-	nvme_init_identify_csi_ns(&cmd, cfg.namespace_id,
-				  NVME_CSI_NVM, cfg.uuid_index,
-				  id_ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_csi_ns(hdl, cfg.namespace_id, NVME_CSI_NVM,
+				   cfg.uuid_index, id_ns);
 	if (!err)
 		nvme_show_nvm_id_ns(id_ns, cfg.namespace_id, ns, 0, false, flags);
 	else if (err > 0)
@@ -7260,7 +7267,6 @@ static int write_zeroes(int argc, char **argv, struct command *acmd, struct plug
 	_cleanup_free_ struct nvme_id_ns *ns = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	__u8 sts = 0, pif = 0;
 	__u16 control = 0;
 	__u32 result = 0;
@@ -7377,9 +7383,8 @@ static int write_zeroes(int argc, char **argv, struct command *acmd, struct plug
 	if (!nvm_ns)
 		return -ENOMEM;
 
-	nvme_init_identify_csi_ns(&cmd, cfg.namespace_id,
-				  NVME_CSI_NVM, 0, nvm_ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_csi_ns(hdl, cfg.namespace_id, NVME_CSI_NVM, 0,
+				   nvm_ns);
 	if (!err) {
 		get_pif_sts(ns, nvm_ns, &pif, &sts);
 	}
@@ -8166,7 +8171,6 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 	_cleanup_free_ struct nvme_nvm_id_ns *nvm_ns = NULL;
 	_cleanup_free_ struct nvme_id_ns *ns = NULL;
 	__u8 lba_index, sts = 0, pif = 0;
-	struct nvme_passthru_cmd cmd;
 	__u16 ms;
 
 	const char *start_block_addr = "64-bit addr of first block to access";
@@ -8356,9 +8360,8 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 	if (!nvm_ns)
 		return -ENOMEM;
 
-	nvme_init_identify_csi_ns(&cmd, cfg.namespace_id, NVME_CSI_NVM,
-				  0, nvm_ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_csi_ns(hdl, cfg.namespace_id, NVME_CSI_NVM, 0,
+				   nvm_ns);
 	if (!err)
 		get_pif_sts(ns, nvm_ns, &pif, &sts);
 
@@ -8533,7 +8536,6 @@ static int verify_cmd(int argc, char **argv, struct command *acmd, struct plugin
 	_cleanup_free_ struct nvme_id_ns *ns = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	__u8 sts = 0, pif = 0;
 	__u16 control = 0;
 	int err;
@@ -8626,9 +8628,8 @@ static int verify_cmd(int argc, char **argv, struct command *acmd, struct plugin
 	if (!nvm_ns)
 		return -ENOMEM;
 
-	nvme_init_identify_csi_ns(&cmd, cfg.namespace_id,
-				   NVME_CSI_NVM, 0, nvm_ns);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_csi_ns(hdl, cfg.namespace_id, NVME_CSI_NVM, 0,
+				   nvm_ns);
 	if (!err) {
 		get_pif_sts(ns, nvm_ns, &pif, &sts);
 	}
