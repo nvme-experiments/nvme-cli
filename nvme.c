@@ -536,6 +536,16 @@ static int get_smart_log(int argc, char **argv, struct command *acmd, struct plu
 	return err;
 }
 
+int nvme_identify_ctrl(struct nvme_transport_handle *hdl,
+		struct nvme_id_ctrl *id)
+{
+	struct nvme_passthru_cmd cmd;
+
+	nvme_init_identify_ctrl(&cmd, id);
+
+	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
+}
+
 static int get_ana_log(int argc, char **argv, struct command *acmd,
 		struct plugin *plugin)
 {
@@ -547,7 +557,6 @@ static int get_ana_log(int argc, char **argv, struct command *acmd,
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	_cleanup_free_ struct nvme_id_ctrl *ctrl = NULL;
 	_cleanup_free_ struct nvme_ana_log *ana_log = NULL;
-	struct nvme_passthru_cmd cmd;
 	size_t max_ana_log_len;
 	__u32 ana_log_len;
 	nvme_print_flags_t flags;
@@ -579,8 +588,7 @@ static int get_ana_log(int argc, char **argv, struct command *acmd,
 	if (!ctrl)
 		return -ENOMEM;
 
-	nvme_init_identify_ctrl(&cmd, ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, ctrl);
 	if (err) {
 		nvme_show_error("ERROR : nvme_identify_ctrl() failed: %s",
 			nvme_strerror(-err));
@@ -620,15 +628,13 @@ static int parse_telemetry_da(struct nvme_transport_handle *hdl,
 	size_t dalb, da1lb = le16_to_cpu(telem->dalb1), da2lb = le16_to_cpu(telem->dalb2),
 		da3lb = le16_to_cpu(telem->dalb3), da4lb = le32_to_cpu(telem->dalb4);
 	bool data_area_4_support;
-	struct nvme_passthru_cmd cmd;
 	int err;
 
 	id_ctrl = nvme_alloc(sizeof(*id_ctrl));
 	if (!id_ctrl)
 		return -ENOMEM;
 
-	nvme_init_identify_ctrl(&cmd, id_ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, id_ctrl);
 	if (err) {
 		fprintf(stderr, "identify-ctrl: %s", nvme_strerror(-err));
 		return err;
@@ -1167,7 +1173,6 @@ static int get_error_log(int argc, char **argv, struct command *acmd, struct plu
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	struct nvme_id_ctrl ctrl = { 0 };
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	int err = -1;
 
@@ -1203,8 +1208,7 @@ static int get_error_log(int argc, char **argv, struct command *acmd, struct plu
 		return -1;
 	}
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (err < 0) {
 		nvme_show_perror("identify controller");
 		return err;
@@ -1424,7 +1428,6 @@ static int get_pred_lat_event_agg_log(int argc, char **argv,
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	_cleanup_free_ struct nvme_id_ctrl *ctrl = NULL;
 	_cleanup_free_ void *pea_log = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	__u32 log_size;
 	int err;
@@ -1468,8 +1471,7 @@ static int get_pred_lat_event_agg_log(int argc, char **argv,
 	if (!ctrl)
 		return -ENOMEM;
 
-	nvme_init_identify_ctrl(&cmd, ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, ctrl);
 	if (err < 0) {
 		nvme_show_error("identify controller: %s", nvme_strerror(-err));
 		return err;
@@ -1632,7 +1634,6 @@ static int get_endurance_event_agg_log(int argc, char **argv,
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	_cleanup_free_ struct nvme_id_ctrl *ctrl = NULL;
 	_cleanup_free_ void *endurance_log = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	__u32 log_size;
 	int err;
@@ -1676,8 +1677,7 @@ static int get_endurance_event_agg_log(int argc, char **argv,
 	if (!ctrl)
 		return -ENOMEM;
 
-	nvme_init_identify_ctrl(&cmd, ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, ctrl);
 	if (err < 0) {
 		nvme_show_error("identify controller: %s", nvme_strerror(-err));
 		return err;
@@ -2868,14 +2868,12 @@ static int id_endurance_grp_list(int argc, char **argv, struct command *acmd,
 static bool is_ns_mgmt_support(struct nvme_transport_handle *hdl)
 {
 	_cleanup_free_ struct nvme_id_ctrl *ctrl = nvme_alloc(sizeof(*ctrl));
-	struct nvme_passthru_cmd cmd;
 	int err;
 
 	if (ctrl)
 		return false;
 
-	nvme_init_identify_ctrl(&cmd, ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, ctrl);
 	if (err)
 		return false;
 
@@ -2960,7 +2958,6 @@ static int nvme_attach_ns(int argc, char **argv, int attach, const char *desc, s
 	_cleanup_free_ struct nvme_ctrl_list *cntlist = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	int err, num;
 	__u16 list[NVME_ID_CTRL_LIST_MAX];
 	nvme_print_flags_t flags;
@@ -3019,8 +3016,7 @@ static int nvme_attach_ns(int argc, char **argv, int attach, const char *desc, s
 	} else {
 		struct nvme_id_ctrl ctrl = { 0 };
 
-		nvme_init_identify_ctrl(&cmd, &ctrl);
-		err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+		err = nvme_identify_ctrl(hdl, &ctrl);
 		if (err) {
 			fprintf(stderr, "identify-ctrl %s\n", nvme_strerror(-err));
 			return err;
@@ -3090,8 +3086,7 @@ static int parse_lba_num_si(struct nvme_transport_handle *hdl, const char *opt,
 	if (!ctrl)
 		return -ENOMEM;
 
-	nvme_init_identify_ctrl(&cmd, ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, ctrl);
 	if (err) {
 		if (err < 0)
 			nvme_show_error("identify controller: %s", nvme_strerror(-err));
@@ -3326,8 +3321,7 @@ static int create_ns(int argc, char **argv, struct command *acmd, struct plugin 
 	if (!id)
 		return -ENOMEM;
 
-	nvme_init_identify_ctrl(&cmd, id);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, id);
 	if (err) {
 		if (err < 0) {
 			nvme_show_error("identify-controller: %s", nvme_strerror(-err));
@@ -3561,7 +3555,6 @@ int __id_ctrl(int argc, char **argv, struct command *acmd, struct plugin *plugin
 	_cleanup_free_ struct nvme_id_ctrl *ctrl = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	int err;
 
@@ -3605,8 +3598,7 @@ int __id_ctrl(int argc, char **argv, struct command *acmd, struct plugin *plugin
 	if (!ctrl)
 		return -ENOMEM;
 
-	nvme_init_identify_ctrl(&cmd, ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, ctrl);
 	if (!err)
 		nvme_show_id_ctrl(ctrl, flags, vs);
 	else if (err > 0)
@@ -4545,7 +4537,6 @@ static int wait_self_test(struct nvme_transport_handle *hdl)
 	_cleanup_free_ struct nvme_self_test_log *log = NULL;
 	_cleanup_free_ struct nvme_id_ctrl *ctrl = NULL;
 	int err, i = 0, p = 0, cnt = 0;
-	struct nvme_passthru_cmd cmd;
 	int wthr;
 
 	ctrl = nvme_alloc(sizeof(*ctrl));
@@ -4556,8 +4547,7 @@ static int wait_self_test(struct nvme_transport_handle *hdl)
 	if (!log)
 		return -ENOMEM;
 
-	nvme_init_identify_ctrl(&cmd, ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, ctrl);
 	if (err) {
 		nvme_show_error("identify-ctrl: %s", nvme_strerror(-err));
 		return err;
@@ -5140,7 +5130,6 @@ static int fw_download(int argc, char **argv, struct command *acmd, struct plugi
 	struct stat sb;
 	void *fw_buf;
 	struct nvme_id_ctrl ctrl = { 0 };
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 
 	struct config {
@@ -5196,8 +5185,7 @@ static int fw_download(int argc, char **argv, struct command *acmd, struct plugi
 	}
 
 	if (cfg.xfer == 0) {
-		nvme_init_identify_ctrl(&cmd, &ctrl);
-		err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+		err = nvme_identify_ctrl(hdl, &ctrl);
 		if (err) {
 			nvme_show_error("identify-ctrl: %s", nvme_strerror(-err));
 			return err;
@@ -5262,15 +5250,13 @@ static char *nvme_fw_status_reset_type(__u16 status)
 static bool fw_commit_support_mud(struct nvme_transport_handle *hdl)
 {
 	_cleanup_free_ struct nvme_id_ctrl *ctrl = NULL;
-	struct nvme_passthru_cmd cmd;
 	int err;
 
 	ctrl = nvme_alloc(sizeof(*ctrl));
 	if (!ctrl)
 		return false;
 
-	nvme_init_identify_ctrl(&cmd, ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, ctrl);
 	if (err)
 		nvme_show_error("identify-ctrl: %s", nvme_strerror(-err));
 	else if (ctrl->frmw >> 5 & 0x1)
@@ -6551,8 +6537,7 @@ static int format_cmd(int argc, char **argv, struct command *acmd, struct plugin
 	if (!ctrl)
 		return -ENOMEM;
 
-	nvme_init_identify_ctrl(&cmd, ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, ctrl);
 	if (err) {
 		nvme_show_error("identify-ctrl: %s", nvme_strerror(-err));
 		return err;
@@ -8055,7 +8040,6 @@ static int resv_report(int argc, char **argv, struct command *acmd, struct plugi
 	_cleanup_free_ struct nvme_id_ctrl *ctrl = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t flags;
 	int err, size;
 
@@ -8111,8 +8095,7 @@ static int resv_report(int argc, char **argv, struct command *acmd, struct plugi
 	if (!ctrl)
 		return -ENOMEM;
 
-	nvme_init_identify_ctrl(&cmd, ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, ctrl);
 	if (err) {
 		nvme_show_error("identify-ctrl: %s", nvme_strerror(-err));
 		return err;

@@ -1814,7 +1814,6 @@ static int micron_nand_stats(int argc, char **argv,
 	unsigned int logFB[FB_log_size/sizeof(int)] = { 0 };
 	unsigned char logC0[C0_log_size] = { 0 };
 	enum eDriveModel eModel = UNKNOWN_MODEL;
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
@@ -1846,8 +1845,7 @@ static int micron_nand_stats(int argc, char **argv,
 	if (!strcmp(cfg.fmt, "normal"))
 		is_json = false;
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (err) {
 		printf("Error %d retrieving controller identification data\n", err);
 		goto out;
@@ -1863,8 +1861,7 @@ static int micron_nand_stats(int argc, char **argv,
 		goto out;
 	}
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (err) {
 		fprintf(stderr, "ERROR : identify_ctrl() failed with 0x%x\n", err);
 		return -1;
@@ -2479,7 +2476,6 @@ static int micron_drive_info(int argc, char **argv, struct command *acmd,
 {
 	const char *desc = "Get drive HW information";
 	struct nvme_id_ctrl ctrl =	{ 0 };
-	struct nvme_passthru_cmd admin_cmd = { 0 };
 	unsigned char logC0[C0_log_size] = { 0 };
 	struct fb_drive_info {
 		unsigned char hw_ver_major;
@@ -2496,7 +2492,6 @@ static int micron_drive_info(int argc, char **argv, struct command *acmd,
 	struct json_object *driveInfo;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	struct format {
 		char *fmt;
 	};
@@ -2540,8 +2535,7 @@ static int micron_drive_info(int argc, char **argv, struct command *acmd,
 			return -1;
 		}
 	} else {
-		nvme_init_identify_ctrl(&cmd, &ctrl);
-		err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+		err = nvme_identify_ctrl(hdl, &ctrl);
 		if (err) {
 			fprintf(stderr, "ERROR : identify_ctrl() failed with 0x%x\n", err);
 			return -1;
@@ -3227,7 +3221,6 @@ static int micron_ocp_smart_health_logs(int argc, char **argv, struct command *a
 	enum eDriveModel eModel = UNKNOWN_MODEL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	bool is_json = true;
 	nsze_from_oacs = false;
 	struct format {
@@ -3256,8 +3249,7 @@ static int micron_ocp_smart_health_logs(int argc, char **argv, struct command *a
 		__u8 spec = (eModel == M5410) ? 0 : 1;
 		__u8 nsze;
 
-		nvme_init_identify_ctrl(&cmd, &ctrl);
-		err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+		err = nvme_identify_ctrl(hdl, &ctrl);
 		if (!err)
 			err = nvme_get_log_simple(hdl, 0xFB, FB_log_size, logFB);
 		if (err) {
@@ -3342,7 +3334,6 @@ static int micron_telemetry_cntrl_option(int argc, char **argv,
 	struct nvme_id_ctrl ctrl = { 0 };
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 
 	struct {
 		char *option;
@@ -3362,8 +3353,7 @@ static int micron_telemetry_cntrl_option(int argc, char **argv,
 	if (err < 0)
 		return -1;
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if ((ctrl.lpa & 0x8) != 0x8) {
 		printf("drive doesn't support host/controller generated telemetry logs\n");
 		return err;
@@ -3735,7 +3725,6 @@ static int micron_internal_logs(int argc, char **argv, struct command *acmd,
 	int  c_logs_index = 8; /* should be current size of aVendorLogs */
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	struct {
 		unsigned char ucLogPage;
 		const char *strFileName;
@@ -3864,8 +3853,7 @@ static int micron_internal_logs(int argc, char **argv, struct command *acmd,
 		goto out;
 	}
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (err)
 		goto out;
 
@@ -4165,7 +4153,6 @@ static int micron_cloud_boot_SSD_version(int argc, char **argv,
 	int err = 0;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	struct format {
 	char *fmt;
 	};
@@ -4183,8 +4170,7 @@ static int micron_cloud_boot_SSD_version(int argc, char **argv,
 	if (err < 0)
 		return -1;
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (err == 0) {
 		if (ctrl.vs[536] != MICRON_CUST_ID_GG) {
 			printf(
@@ -4225,7 +4211,6 @@ static int micron_device_waf(int argc, char **argv, struct command *acmd,
 	int err = 0;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 
 	long double tlc_units_written, slc_units_written;
 	long double data_units_written, write_amplification_factor;
@@ -4249,8 +4234,7 @@ static int micron_device_waf(int argc, char **argv, struct command *acmd,
 	if (err < 0)
 		return -1;
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (err == 0) {
 		if (ctrl.vs[536] != MICRON_CUST_ID_GG) {
 			printf("vs-device-waf option is not supported for specified drive\n");
@@ -4293,7 +4277,6 @@ static int micron_cloud_log(int argc, char **argv, struct command *acmd,
 	int err = 0;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	bool is_json = true;
 	struct format {
 		char *fmt;
@@ -4322,8 +4305,7 @@ static int micron_cloud_log(int argc, char **argv, struct command *acmd,
 		goto out;
 	}
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (err == 0) {
 		if (ctrl.vs[536] != MICRON_CUST_ID_GG) {
 			printf("vs-cloud-log option is not supported for specified drive\n");

@@ -761,8 +761,7 @@ static int netapp_smdevices_get_info(struct nvme_transport_handle *hdl,
 	struct nvme_passthru_cmd cmd;
 	int err;
 
-	nvme_init_identify_ctrl(&cmd, &item->ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &item->ctrl);
 	if (err) {
 		fprintf(stderr,
 			"Identify Controller failed to %s (%s)\n", dev,
@@ -800,8 +799,7 @@ static int netapp_ontapdevices_get_info(struct nvme_transport_handle *hdl,
 	void *nsdescs;
 	int err;
 
-	nvme_init_identify_ctrl(&cmd, &item->ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &item->ctrl);
 	if (err) {
 		fprintf(stderr, "Identify Controller failed to %s (%s)\n",
 			dev, err < 0 ? strerror(-err) :

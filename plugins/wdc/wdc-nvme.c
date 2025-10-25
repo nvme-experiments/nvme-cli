@@ -1520,13 +1520,11 @@ static int wdc_get_pci_ids(struct nvme_global_ctx *ctx, struct nvme_transport_ha
 
 static int wdc_get_vendor_id(struct nvme_transport_handle *hdl, uint32_t *vendor_id)
 {
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	int ret;
 
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ctrl(hdl, &ctrl);
 	if (ret) {
 		fprintf(stderr, "ERROR: WDC: nvme_identify_ctrl() failed 0x%x\n", ret);
 		return -1;
@@ -1612,13 +1610,11 @@ static bool wdc_check_power_of_2(int num)
 
 static int wdc_get_model_number(struct nvme_transport_handle *hdl, char *model)
 {
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	int ret, i;
 
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ctrl(hdl, &ctrl);
 	if (ret) {
 		fprintf(stderr, "ERROR: WDC: nvme_identify_ctrl() failed 0x%x\n", ret);
 		return -1;
@@ -2136,15 +2132,13 @@ static int wdc_get_serial_name(struct nvme_transport_handle *hdl, char *file, si
 	int res_len = 0;
 	char orig[PATH_MAX] = {0};
 	struct nvme_id_ctrl ctrl;
-	struct nvme_passthru_cmd cmd;
 	int ctrl_sn_len = sizeof(ctrl.sn);
 
 	i = sizeof(ctrl.sn) - 1;
 	strncpy(orig, file, PATH_MAX - 1);
 	memset(file, 0, len);
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ctrl(hdl, &ctrl);
 	if (ret) {
 		fprintf(stderr, "ERROR: WDC: nvme_identify_ctrl() failed 0x%x\n", ret);
 		return -1;
@@ -3185,13 +3179,11 @@ static int wdc_do_cap_telemetry_log(struct nvme_global_ctx *ctx,
 	void *buf = NULL;
 	__u8 *data_ptr = NULL;
 	int data_written = 0, data_remaining = 0;
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	__u64 capabilities = 0;
 
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (err) {
 		fprintf(stderr, "ERROR: WDC: nvme_identify_ctrl() failed 0x%x\n", err);
 		return err;
@@ -5035,12 +5027,10 @@ static int wdc_print_latency_monitor_log_normal(struct nvme_transport_handle *hd
 	printf("Latency Monitor/C3 Log Page Data\n");
 	printf("  Controller   :  %s\n", nvme_transport_handle_get_name(hdl));
 	int err = -1, i, j;
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	char ts_buf[128];
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (!err) {
 		printf("  Serial Number:  %-.*s\n", (int)sizeof(ctrl.sn), ctrl.sn);
 	} else {
@@ -9635,7 +9625,6 @@ out:
 
 static int wdc_get_serial_and_fw_rev(struct nvme_transport_handle *hdl, char *sn, char *fw_rev)
 {
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	int ret;
 	int i;
@@ -9644,8 +9633,7 @@ static int wdc_get_serial_and_fw_rev(struct nvme_transport_handle *hdl, char *sn
 	memset(sn, 0, WDC_SERIAL_NO_LEN);
 	memset(fw_rev, 0, WDC_NVME_FIRMWARE_REV_LEN);
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ctrl(hdl, &ctrl);
 	if (ret) {
 		fprintf(stderr, "ERROR: WDC: nvme_identify_ctrl() failed 0x%x\n", ret);
 		return -1;
@@ -9663,15 +9651,13 @@ static int wdc_get_serial_and_fw_rev(struct nvme_transport_handle *hdl, char *sn
 
 static int wdc_get_max_transfer_len(struct nvme_transport_handle *hdl, __u32 *maxTransferLen)
 {
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	int ret = 0;
 
 	__u32 maxTransferLenDevice = 0;
 
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ctrl(hdl, &ctrl);
 	if (ret) {
 		fprintf(stderr, "ERROR: WDC: nvme_identify_ctrl() failed 0x%x\n", ret);
 		return -1;
@@ -10136,13 +10122,13 @@ static int wdc_do_drive_essentials(struct nvme_global_ctx *ctx, struct nvme_tran
 	__u32 listIdx = 0;
 	__u32 vuLogIdx = 0;
 	__u32 result;
+	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	struct nvme_id_ns ns;
 	struct nvme_error_log_page *elogBuffer;
 	struct nvme_smart_log smart_log;
 	struct nvme_firmware_slot fw_log;
 	struct WDC_NVME_DE_VU_LOGPAGES *vuLogInput = NULL;
-	struct nvme_passthru_cmd cmd;
 
 	memset(bufferFolderPath, 0, sizeof(bufferFolderPath));
 	memset(bufferFolderName, 0, sizeof(bufferFolderName));
@@ -10202,8 +10188,7 @@ static int wdc_do_drive_essentials(struct nvme_global_ctx *ctx, struct nvme_tran
 
 	/* Get Identify Controller Data */
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ctrl(hdl, &ctrl);
 	if (ret) {
 		fprintf(stderr, "ERROR: WDC: nvme_identify_ctrl() failed, ret = %d\n", ret);
 		return -1;
@@ -10984,7 +10969,6 @@ out:
 static int wdc_get_drive_reason_id(struct nvme_transport_handle *hdl, char *drive_reason_id, size_t len)
 {
 	const char *reason_id_str = "reason_id";
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	int res_len = 0;
 	int i, j;
@@ -10994,8 +10978,7 @@ static int wdc_get_drive_reason_id(struct nvme_transport_handle *hdl, char *driv
 	j = sizeof(ctrl.mn) - 1;
 	memset(drive_reason_id, 0, len);
 	memset(&ctrl, 0, sizeof(struct nvme_id_ctrl));
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ctrl(hdl, &ctrl);
 	if (ret) {
 		fprintf(stderr, "ERROR: WDC: nvme_identify_ctrl() failed 0x%x\n", ret);
 		return -1;
@@ -11729,7 +11712,6 @@ static int wdc_vs_drive_info(int argc, char **argv,
 	const char *desc = "Send a vs-drive-info command.";
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	nvme_print_flags_t fmt;
 	uint64_t capabilities = 0;
 	int ret;
@@ -11775,8 +11757,7 @@ static int wdc_vs_drive_info(int argc, char **argv,
 	}
 
 	/* get the id ctrl data used to fill in drive info below */
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ctrl(hdl, &ctrl);
 	if (ret) {
 		fprintf(stderr, "ERROR: WDC %s: Identify Controller failed\n", __func__);
 		return ret;
@@ -11997,7 +11978,6 @@ static int wdc_vs_temperature_stats(int argc, char **argv,
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
 	struct nvme_smart_log smart_log;
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl id_ctrl;
 	nvme_print_flags_t fmt;
 	uint64_t capabilities = 0;
@@ -12042,8 +12022,7 @@ static int wdc_vs_temperature_stats(int argc, char **argv,
 	}
 
 	/* get the temperature stats or report errors */
-	nvme_init_identify_ctrl(&cmd, &id_ctrl);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ctrl(hdl, &id_ctrl);
 	if (ret)
 		goto out;
 	ret = nvme_get_log_smart(hdl, NVME_NSID_ALL, false,

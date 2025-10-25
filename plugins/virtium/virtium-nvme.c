@@ -294,8 +294,7 @@ static int vt_add_entry_to_log(struct nvme_transport_handle *hdl,
 		return -1;
 	}
 
-	nvme_init_identify_ctrl(&cmd, &smart.raw_ctrl);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ctrl(hdl, &smart.raw_ctrl);
 	if (ret) {
 		printf("Cannot read device identify controller\n");
 		return -1;
@@ -319,7 +318,6 @@ vt_update_vtview_log_header(struct nvme_transport_handle *hdl, const char *path,
 			    const struct vtview_save_log_settings *cfg)
 {
 	struct vtview_log_header header;
-	struct nvme_passthru_cmd cmd;
 	const char *filename;
 	int ret = 0;
 
@@ -350,8 +348,7 @@ vt_update_vtview_log_header(struct nvme_transport_handle *hdl, const char *path,
 	printf("Log file: %s\n", filename);
 	header.time_stamp = time(NULL);
 
-	nvme_init_identify_ctrl(&cmd, &header.raw_ctrl);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ctrl(hdl, &header.raw_ctrl);
 	if (ret) {
 		printf("Cannot read identify device\n");
 		return -1;
@@ -1033,7 +1030,6 @@ static int vt_show_identify(int argc, char **argv, struct command *acmd, struct 
 		"virtium show-identify /dev/yourDevice\n";
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	int ret, err = 0;
 
@@ -1047,8 +1043,7 @@ static int vt_show_identify(int argc, char **argv, struct command *acmd, struct 
 		return err;
 	}
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	ret = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	ret = nvme_identify_ctrl(hdl, &ctrl);
 	if (ret) {
 		printf("Cannot read identify device\n");
 		return -1;

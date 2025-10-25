@@ -1289,10 +1289,8 @@ static int setup_file(char *f, char *file, struct nvme_transport_handle *hdl, in
 {
 	struct nvme_id_ctrl ctrl;
 	int err = 0, i = sizeof(ctrl.sn) - 1;
-	struct nvme_passthru_cmd cmd;
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (err)
 		return err;
 

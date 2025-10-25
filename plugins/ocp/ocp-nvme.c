@@ -297,7 +297,6 @@ int ocp_set_latency_monitor_feature(int argc, char **argv, struct command *acmd,
 	int err = -1;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	__u32 result;
 	struct feature_latency_monitor buf = { 0 };
 	__u32  nsid = NVME_NSID_ALL;
@@ -372,8 +371,7 @@ int ocp_set_latency_monitor_feature(int argc, char **argv, struct command *acmd,
 		}
 	}
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (err)
 		return err;
 
@@ -1487,7 +1485,6 @@ static int ocp_telemetry_log(int argc, char **argv, struct command *acmd, struct
 
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	int err = 0;
 	__u32  nsid = NVME_NSID_ALL;
 	struct stat nvme_stat;
@@ -1525,8 +1522,7 @@ static int ocp_telemetry_log(int argc, char **argv, struct command *acmd, struct
 			return err;
 	}
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (err)
 		return err;
 

@@ -74,8 +74,7 @@ static int huawei_get_nvme_info(struct nvme_transport_handle *hdl,
 
 	memset(item, 0, sizeof(*item));
 
-	nvme_init_identify_ctrl(&cmd, &item->ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &item->ctrl);
 	if (err)
 		return err;
 

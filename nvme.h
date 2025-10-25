@@ -127,4 +127,6 @@ void d_raw(unsigned char *buf, unsigned len);
 
 int get_reg_size(int offset);
 bool nvme_is_ctrl_reg(int offset);
+int nvme_identify_ctrl(struct nvme_transport_handle *hdl,
+		struct nvme_id_ctrl *id);
 #endif /* _NVME_H */

@@ -901,7 +901,6 @@ static int vs_smart_log(int argc, char **argv, struct command *acmd, struct plug
 	const char *output_format = "output in binary format";
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	int err, index = 0;
 	struct config {
 		char *output_format;
@@ -932,8 +931,7 @@ static int vs_smart_log(int argc, char **argv, struct command *acmd, struct plug
 	 * to determine drive family.
 	 */
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (!err) {
 		memcpy(modelNo, ctrl.mn, sizeof(modelNo));
 	} else {
@@ -1456,7 +1454,6 @@ static int clear_fw_activate_history(int argc, char **argv, struct command *acmd
 	int err;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	struct nvme_id_ctrl ctrl;
 	char modelNo[40];
 	__u32 result;
@@ -1480,8 +1477,7 @@ static int clear_fw_activate_history(int argc, char **argv, struct command *acmd
 		return -1;
 	}
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (!err) {
 		memcpy(modelNo, ctrl.mn, sizeof(modelNo));
 	} else {
@@ -1531,7 +1527,6 @@ static int vs_clr_pcie_correctable_errs(int argc, char **argv, struct command *a
 
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 
 	__u32 result;
 	int err;
@@ -1556,8 +1551,7 @@ static int vs_clr_pcie_correctable_errs(int argc, char **argv, struct command *a
 	}
 
 
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (!err) {
 		memcpy(modelNo, ctrl.mn, sizeof(modelNo));
 	} else {

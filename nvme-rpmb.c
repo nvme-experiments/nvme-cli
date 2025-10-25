@@ -892,7 +892,6 @@ int rpmb_cmd_option(int argc, char **argv, struct command *acmd, struct plugin *
 	_cleanup_free_ unsigned char *msg_buf = NULL;
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
-	struct nvme_passthru_cmd cmd;
 	unsigned int write_cntr = 0;
 	unsigned int msg_size = 0;
 	unsigned int key_size = 0;
@@ -912,13 +911,12 @@ int rpmb_cmd_option(int argc, char **argv, struct command *acmd, struct plugin *
 
 	if ((err = parse_and_open(&ctx, &hdl, argc, argv, desc, opts)))
 		return err;
-	
+
 	/* before parsing  commands, check if controller supports any RPMB targets */
-	nvme_init_identify_ctrl(&cmd, &ctrl);
-	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
+	err = nvme_identify_ctrl(hdl, &ctrl);
 	if (err)
 		return err;
-	
+
 	regs.rpmbs = le32_to_cpu(ctrl.rpmbs);
 	if (regs.num_targets == 0) {
 		fprintf(stderr, "No RPMB targets are supported by the drive\n");
