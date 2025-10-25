@@ -3099,11 +3099,10 @@ static int parse_lba_num_si(struct nvme_transport_handle *hdl, const char *opt,
 	if (!ns_list)
 		return -ENOMEM;
 
-	if ((ctrl->oacs & 0x8) >> 3)
+	if ((ctrl->oacs & 0x8) >> 3) {
 		nsid = NVME_NSID_ALL;
-	else {
-		nvme_init_identify_csi_active_ns_list(&cmd, nsid - 1,
-						      NVME_CSI_NVM, ns_list);
+	} else {
+		nvme_init_identify_active_ns_list(&cmd, nsid - 1, ns_list);
 		err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 		if (err) {
 			if (err < 0)
