@@ -157,16 +157,6 @@ static int id_ctrl(int argc, char **argv, struct command *acmd, struct plugin *p
 	return err;
 }
 
-int nvme_zns_identify_ns(struct nvme_transport_handle *hdl,
-		__u32 nsid, struct nvme_zns_id_ns *data)
-{
-	struct nvme_passthru_cmd cmd;
-
-	nvme_init_zns_identify_ns(&cmd, nsid, data);
-
-	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
-}
-
 static int id_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "Send a ZNS specific Identify Namespace command to\n"

@@ -536,16 +536,6 @@ static int get_smart_log(int argc, char **argv, struct command *acmd, struct plu
 	return err;
 }
 
-int nvme_identify_ctrl(struct nvme_transport_handle *hdl,
-		struct nvme_id_ctrl *id)
-{
-	struct nvme_passthru_cmd cmd;
-
-	nvme_init_identify_ctrl(&cmd, id);
-
-	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
-}
-
 static int get_ana_log(int argc, char **argv, struct command *acmd,
 		struct plugin *plugin)
 {
@@ -2679,17 +2669,6 @@ static int list_ctrl(int argc, char **argv, struct command *acmd, struct plugin 
 	return err;
 }
 
-int nvme_identify(struct nvme_transport_handle *hdl, __u32 nsid,
-		enum nvme_csi csi, enum nvme_identify_cns cns, void *data,
-		__u32 len)
-{
-	struct nvme_passthru_cmd cmd;
-
-	nvme_init_identify(&cmd, nsid, csi, cns, data, len);
-
-	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
-}
-
 static int list_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
 {
 	const char *desc = "For the specified controller handle, show the "
@@ -2763,16 +2742,6 @@ static int list_ns(int argc, char **argv, struct command *acmd, struct plugin *p
 		nvme_show_error("id namespace list: %s", nvme_strerror(-err));
 
 	return err;
-}
-
-int nvme_identify_csi_ns_user_data_format(struct nvme_transport_handle *hdl,
-		enum nvme_csi csi, __u16 fidx, __u8 uidx, void *data)
-{
-	struct nvme_passthru_cmd cmd;
-
-	nvme_init_identify_csi_ns_user_data_format(&cmd, csi, fidx, uidx, data);
-
-	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
 }
 
 static int id_ns_lba_format(int argc, char **argv, struct command *acmd, struct plugin *plugin)
@@ -3075,26 +3044,6 @@ static int detach_ns(int argc, char **argv, struct command *acmd, struct plugin 
 	return nvme_attach_ns(argc, argv, 0, desc, acmd);
 }
 
-int nvme_identify_active_ns_list(struct nvme_transport_handle *hdl,
-		__u32 nsid, struct nvme_ns_list *ns_list)
-{
-	struct nvme_passthru_cmd cmd;
-
-	nvme_init_identify_active_ns_list(&cmd, nsid, ns_list);
-
-	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
-}
-
-int nvme_identify_ns(struct nvme_transport_handle *hdl,
-		__u32 nsid, struct nvme_id_ns *ns)
-{
-	struct nvme_passthru_cmd cmd;
-
-	nvme_init_identify_ns(&cmd, nsid, ns);
-
-	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
-}
-
 static int parse_lba_num_si(struct nvme_transport_handle *hdl, const char *opt,
 			    const char *val, __u8 flbas, __u64 *num, __u64 align)
 {
@@ -3183,16 +3132,6 @@ static int parse_lba_num_si(struct nvme_transport_handle *hdl, const char *opt,
 		*num /= lbas;
 
 	return 0;
-}
-
-int nvme_identify_ns_granularity(struct nvme_transport_handle *hdl,
-		struct nvme_id_ns_granularity_list *gr_list)
-{
-	struct nvme_passthru_cmd cmd;
-
-	nvme_init_identify_ns_granularity(&cmd, gr_list);
-
-	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
 }
 
 static int create_ns(int argc, char **argv, struct command *acmd, struct plugin *plugin)
@@ -3699,16 +3638,6 @@ static int nvm_id_ctrl(int argc, char **argv, struct command *acmd,
 	return err;
 }
 
-int nvme_identify_csi_ns(struct nvme_transport_handle *hdl, __u32 nsid,
-		enum nvme_csi csi, __u8 uidx, struct nvme_nvm_id_ns *id_ns)
-{
-	struct nvme_passthru_cmd cmd;
-
-	nvme_init_identify_csi_ns(&cmd, nsid, csi, uidx, id_ns);
-
-	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
-}
-
 static int nvm_id_ns(int argc, char **argv, struct command *acmd,
 	struct plugin *plugin)
 {
@@ -3849,16 +3778,6 @@ static int nvm_id_ns_lba_format(int argc, char **argv, struct command *acmd, str
 		nvme_show_perror("NVM identify namespace for specific LBA format");
 
 	return err;
-}
-
-int nvme_identify_ns_descs_list(struct nvme_transport_handle *hdl,
-		__u32 nsid, struct nvme_ns_id_desc *descs)
-{
-	struct nvme_passthru_cmd cmd;
-
-	nvme_init_identify_ns_descs_list(&cmd, nsid, descs);
-
-	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
 }
 
 static int ns_descs(int argc, char **argv, struct command *acmd, struct plugin *plugin)
@@ -4177,16 +4096,6 @@ static int id_nvmset(int argc, char **argv, struct command *acmd, struct plugin 
 		nvme_show_error("identify nvm set list: %s", nvme_strerror(-err));
 
 	return err;
-}
-
-int nvme_identify_uuid_list(struct nvme_transport_handle *hdl,
-		struct nvme_id_uuid_list *uuid_list)
-{
-	struct nvme_passthru_cmd cmd;
-
-	nvme_init_identify_uuid_list(&cmd, uuid_list);
-
-	return nvme_submit_admin_passthru(hdl, &cmd, NULL);
 }
 
 static int id_uuid(int argc, char **argv, struct command *acmd, struct plugin *plugin)

@@ -127,23 +127,4 @@ void d_raw(unsigned char *buf, unsigned len);
 
 int get_reg_size(int offset);
 bool nvme_is_ctrl_reg(int offset);
-int nvme_identify_ctrl(struct nvme_transport_handle *hdl,
-		struct nvme_id_ctrl *id);
-int nvme_identify_active_ns_list(struct nvme_transport_handle *hdl,
-		__u32 nsid, struct nvme_ns_list *ns_list);
-int nvme_identify_ns(struct nvme_transport_handle *hdl,
-		__u32 nsid, struct nvme_id_ns *ns);
-int nvme_identify_csi_ns(struct nvme_transport_handle *hdl, __u32 nsid,
-		enum nvme_csi csi, __u8 uidx, struct nvme_nvm_id_ns *id_ns);
-int nvme_identify_uuid_list(struct nvme_transport_handle *hdl,
-		struct nvme_id_uuid_list *uuid_list);
-int nvme_identify(struct nvme_transport_handle *hdl, __u32 nsid,
-		enum nvme_csi csi, enum nvme_identify_cns cns, void *data,
-		__u32 len);
-int nvme_identify_csi_ns_user_data_format(struct nvme_transport_handle *hdl,
-		enum nvme_csi csi, __u16 fidx, __u8 uidx, void *data);
-int nvme_identify_ns_granularity(struct nvme_transport_handle *hdl,
-		struct nvme_id_ns_granularity_list *gr_list);
-int nvme_identify_ns_descs_list(struct nvme_transport_handle *hdl,
-		__u32 nsid, struct nvme_ns_id_desc *descs);
 #endif /* _NVME_H */
