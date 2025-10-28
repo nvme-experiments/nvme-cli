@@ -8116,25 +8116,33 @@ unsigned long long elapsed_utime(struct timeval start_time,
 	return err;
 }
 
-static int submit_io(int opcode, char *command, const char *desc, int argc, char **argv)
+static int
+submit_io(int opcode,
+		char *command, const char *desc, int argc, char **argv)
 {
-	struct timeval start_time, end_time;
-	void *buffer;
-	_cleanup_free_ void *mbuffer = NULL;
-	int err = 0;
-	_cleanup_fd_ int dfd = -1, mfd = -1;
-	int flags, pi_size;
-	int mode = 0644;
-	__u16 control = 0, nblocks = 0;
-	__u32 dsmgmt = 0;
-	unsigned int logical_block_size = 0;
-	unsigned long long buffer_size = 0, mbuffer_size = 0;
-	_cleanup_huge_ struct nvme_mem_huge mh = { 0, };
-	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
+
+	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
+
+	unsigned long long buffer_size = 0, mbuffer_size = 0;
+
 	_cleanup_free_ struct nvme_nvm_id_ns *nvm_ns = NULL;
+
+	_cleanup_huge_ struct nvme_mem_huge mh = { 0, };
+
 	_cleanup_free_ struct nvme_id_ns *ns = NULL;
+	unsigned int logical_block_size = 0;
+	struct timeval start_time, end_time;
+	_cleanup_free_ void *mbuffer = NULL;
+	_cleanup_fd_ int dfd = -1, mfd = -1;
 	__u8 lba_index, sts = 0, pif = 0;
+	__u16 control = 0, nblocks = 0;
+	struct nvme_passthru_cmd cmd;
+	int flags, pi_size;
+	__u32 dsmgmt = 0;
+	int mode = 0644;
+	void *buffer;
+	int err = 0;
 	__u16 ms;
 
 	const char *start_block_addr = "64-bit addr of first block to access";
@@ -8234,8 +8242,10 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 		err = open_exclusive(&ctx, &hdl, argc, argv, cfg.force);
 		if (err) {
 			if (err == -EBUSY) {
-				fprintf(stderr, "Failed to open %s.\n", basename(argv[optind]));
-				fprintf(stderr, "Namespace is currently busy.\n");
+				fprintf(stderr, "Failed to open %s.\n",
+					basename(argv[optind]));
+				fprintf(stderr,
+					"Namespace is currently busy.\n");
 				if (!cfg.force)
 					fprintf(stderr,
 						"Use the force [--force] option to ignore that.\n");
@@ -8249,7 +8259,8 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 	if (!cfg.namespace_id) {
 		err = nvme_get_nsid(hdl, &cfg.namespace_id);
 		if (err < 0) {
-			nvme_show_error("get-namespace-id: %s", nvme_strerror(-err));
+			nvme_show_error("get-namespace-id: %s",
+					nvme_strerror(-err));
 			return err;
 		}
 	}
@@ -8267,7 +8278,8 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 		control |= NVME_IO_STC;
 	if (cfg.dtype) {
 		if (cfg.dtype > 0xf) {
-			nvme_show_error("Invalid directive type, %x", cfg.dtype);
+			nvme_show_error("Invalid directive type, %x",
+					cfg.dtype);
 			return -EINVAL;
 		}
 		control |= cfg.dtype << 4;
@@ -8342,7 +8354,9 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 
 	buffer_size = ((long long)cfg.block_count + 1) * logical_block_size;
 	if (cfg.data_size < buffer_size)
-		nvme_show_error("Rounding data size to fit block count (%lld bytes)", buffer_size);
+		nvme_show_error(
+			"Rounding data size to fit block count (%lld bytes)",
+			buffer_size);
 	else
 		buffer_size = cfg.data_size;
 
@@ -8350,11 +8364,16 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 		/* Use the value provided */
 		nblocks = cfg.block_count;
 	} else {
-		/* Get the required block count. Note this is a zeroes based value. */
-		nblocks = ((buffer_size + (logical_block_size - 1)) / logical_block_size) - 1;
+		/*
+		 * Get the required block count. Note this is a zeroes based
+		 * value.
+		 */
+		nblocks = ((buffer_size + (logical_block_size - 1)) /
+			   logical_block_size) - 1;
 
 		/* Update the data size based on the required block count */
-		buffer_size = ((unsigned long long)nblocks + 1) * logical_block_size;
+		buffer_size = ((unsigned long long)nblocks + 1) *
+			      logical_block_size;
 	}
 
 	buffer = nvme_alloc_huge(buffer_size, &mh);
@@ -8366,8 +8385,9 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 	if (cfg.metadata_size) {
 		mbuffer_size = ((unsigned long long)cfg.block_count + 1) * ms;
 		if (ms && cfg.metadata_size < mbuffer_size)
-			nvme_show_error("Rounding metadata size to fit block count (%lld bytes)",
-					mbuffer_size);
+			nvme_show_error(
+				"Rounding metadata size to fit block count (%lld bytes)",
+				mbuffer_size);
 		else
 			mbuffer_size = cfg.metadata_size;
 
@@ -8384,7 +8404,9 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 		err = read(dfd, (void *)buffer, cfg.data_size);
 		if (err < 0) {
 			err = -errno;
-			nvme_show_error("failed to read data buffer from input file %s", strerror(errno));
+			nvme_show_error(
+				"failed to read data buffer from input file %s",
+				strerror(errno));
 			return err;
 		}
 	}
@@ -8393,7 +8415,9 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 		err = read(mfd, (void *)mbuffer, mbuffer_size);
 		if (err < 0) {
 			err = -errno;
-			nvme_show_error("failed to read meta-data buffer from input file %s", strerror(errno));
+			nvme_show_error(
+				"failed to read meta-data buffer from input file %s",
+				strerror(errno));
 			return err;
 		}
 	}
@@ -8404,55 +8428,57 @@ static int submit_io(int opcode, char *command, const char *desc, int argc, char
 		printf("flags        : %02x\n", 0);
 		printf("control      : %04x\n", control);
 		printf("nblocks      : %04x\n", nblocks);
-		printf("metadata     : %"PRIx64"\n", (uint64_t)(uintptr_t)mbuffer);
-		printf("addr         : %"PRIx64"\n", (uint64_t)(uintptr_t)buffer);
-		printf("slba         : %"PRIx64"\n", (uint64_t)cfg.start_block);
+		printf("metadata     : %"PRIx64"\n",
+		       (uint64_t)(uintptr_t)mbuffer);
+		printf("addr         : %"PRIx64"\n",
+		       (uint64_t)(uintptr_t)buffer);
+		printf("slba         : %"PRIx64"\n",
+		       (uint64_t)cfg.start_block);
 		printf("dsmgmt       : %08x\n", dsmgmt);
-		printf("reftag       : %"PRIx64"\n", (uint64_t)cfg.ref_tag);
+		printf("reftag       : %"PRIx64"\n",
+		       (uint64_t)cfg.ref_tag);
 		printf("apptag       : %04x\n", cfg.app_tag);
 		printf("appmask      : %04x\n", cfg.app_tag_mask);
 		printf("storagetagcheck : %04x\n", cfg.storage_tag_check);
-		printf("storagetag      : %"PRIx64"\n", (uint64_t)cfg.storage_tag);
+		printf("storagetag      : %"PRIx64"\n",
+		       (uint64_t)cfg.storage_tag);
 		printf("pif             : %02x\n", pif);
 		printf("sts             : %02x\n", sts);
 	}
 	if (nvme_cfg.dry_run)
 		return 0;
 
-	struct nvme_io_args args = {
-		.args_size	= sizeof(args),
-		.nsid		= cfg.namespace_id,
-		.slba		= cfg.start_block,
-		.nlb		= nblocks,
-		.control	= control,
-		.dsm		= cfg.dsmgmt,
-		.sts		= sts,
-		.pif		= pif,
-		.dspec		= cfg.dspec,
-		.reftag		= (__u32)cfg.ref_tag,
-		.reftag_u64	= cfg.ref_tag,
-		.apptag		= cfg.app_tag,
-		.appmask	= cfg.app_tag_mask,
-		.storage_tag	= cfg.storage_tag,
-		.data_len	= buffer_size,
-		.data		= buffer,
-		.metadata_len	= mbuffer_size,
-		.metadata	= mbuffer,
-		.timeout	= nvme_cfg.timeout,
-		.result		= NULL,
-	};
 	gettimeofday(&start_time, NULL);
-	err = nvme_io(hdl, &args, opcode);
+	nvme_init_io(&cmd, opcode, cfg.namespace_id, cfg.start_block, buffer,
+		     buffer_size, mbuffer, mbuffer_size);
+	cmd.cdw12 = NVME_FIELD_ENCODE(nblocks,
+			NVME_IOCS_COMMON_CDW12_NLB_SHIFT,
+			NVME_IOCS_COMMON_CDW12_NLB_MASK) |
+		    NVME_FIELD_ENCODE(control,
+			NVME_IOCS_COMMON_CDW12_CONTROL_SHIFT,
+			NVME_IOCS_COMMON_CDW12_CONTROL_MASK);
+	cmd.cdw13 = NVME_FIELD_ENCODE(cfg.dspec,
+			NVME_IOCS_COMMON_CDW13_DSPEC_SHIFT,
+			NVME_IOCS_COMMON_CDW13_DSPEC_MASK) |
+		    NVME_FIELD_ENCODE(cfg.dsmgmt,
+			NVME_IOCS_COMMON_CDW13_DSM_SHIFT,
+			NVME_IOCS_COMMON_CDW13_DSM_MASK);
+	nvme_init_var_size_tags(&cmd, pif, sts, cfg.ref_tag, cfg.storage_tag);
+	nvme_init_app_tag(&cmd, cfg.app_tag, cfg.app_tag_mask);
+	err = nvme_submit_admin_passthru(hdl, &cmd, NULL);
 	gettimeofday(&end_time, NULL);
 	if (cfg.latency)
-		printf(" latency: %s: %llu us\n", command, elapsed_utime(start_time, end_time));
+		printf(" latency: %s: %llu us\n",
+		       command, elapsed_utime(start_time, end_time));
 	if (err < 0) {
 		nvme_show_error("submit-io: %s", nvme_strerror(-err));
 	} else if (err) {
 		nvme_show_status(err);
 	} else {
-		if (!(opcode & 1) && write(dfd, (void *)buffer, buffer_size) < 0) {
-			nvme_show_error("write: %s: failed to write buffer to output file",
+		if (!(opcode & 1) &&
+		    write(dfd, (void *)buffer, buffer_size) < 0) {
+			nvme_show_error(
+				"write: %s: failed to write buffer to output file",
 				strerror(errno));
 			err = -EINVAL;
 		} else if (!(opcode & 1) && cfg.metadata_size &&
