@@ -8730,6 +8730,7 @@ static int capacity_mgmt(int argc, char **argv, struct command *acmd, struct plu
 
 	_cleanup_nvme_global_ctx_ struct nvme_global_ctx *ctx = NULL;
 	_cleanup_nvme_transport_handle_ struct nvme_transport_handle *hdl = NULL;
+	struct nvme_passthru_cmd cmd;
 	int err = -1;
 	__u32 result;
 	nvme_print_flags_t flags;
@@ -8770,16 +8771,9 @@ static int capacity_mgmt(int argc, char **argv, struct command *acmd, struct plu
 		return -1;
 	}
 
-	struct nvme_capacity_mgmt_args args = {
-		.args_size	= sizeof(args),
-		.op		= cfg.operation,
-		.element_id	= cfg.element_id,
-		.cdw11		= cfg.dw11,
-		.cdw12		= cfg.dw12,
-		.timeout	= nvme_cfg.timeout,
-		.result		= &result,
-	};
-	err = nvme_capacity_mgmt(hdl, &args);
+	nvme_init_capacity_mgmt(&cmd, cfg.operation, cfg.element_id,
+		(__u64)cfg.dw12 << 32 | cfg.dw11);
+	err = nvme_submit_admin_passthru(hdl, &cmd, &result);
 	if (!err) {
 		printf("Capacity Management Command is Success\n");
 		if (cfg.operation == 1)
